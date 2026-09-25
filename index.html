@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--primary:#1a3a5c;--primary-light:#2563a8;--accent:#e8341c;--green:#16a34a;--orange:#ea580c;--yellow:#ca8a04;--gray:#64748b;--light:#f1f5f9;--white:#ffffff;--border:#e2e8f0;--shadow:0 2px 8px rgba(0,0,0,.12)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -21,6 +22,16 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .tab{padding:10px 18px;font-size:.82rem;font-weight:600;color:rgba(255,255,255,.65);cursor:pointer;border-bottom:3px solid transparent;transition:.2s;white-space:nowrap}
 .tab:hover{color:#fff}
 .tab.active{color:#fff;border-bottom-color:var(--accent)}
+.tab-menu{position:relative}
+.tab-submenu{display:none;position:absolute;top:100%;left:0;z-index:60;background:#fff;border:1px solid var(--border);border-radius:0 0 8px 8px;box-shadow:var(--shadow);min-width:170px;padding:4px 0}
+.tab-menu:hover .tab-submenu,.tab-menu.aberto .tab-submenu{display:block}
+.tab-subitem{padding:9px 16px;font-size:.82rem;font-weight:600;color:var(--primary);cursor:pointer;white-space:nowrap}
+.tab-subitem:hover{background:var(--light)}
+.cad-form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.cad-form input{flex:1;min-width:220px;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:.85rem}
+.cad-btn{background:var(--primary);color:#fff;border:0;border-radius:6px;padding:8px 18px;font-size:.82rem;font-weight:600;cursor:pointer}
+.cad-btn:disabled{opacity:.6;cursor:default}
+.cad-del{background:transparent;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
 .filters{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters label{font-size:.75rem;color:var(--gray);font-weight:600}
 .filters select{border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:.8rem;color:#1e293b;background:#fff;cursor:pointer}
@@ -88,6 +99,11 @@ tr:last-child td{border-bottom:none}
   <div class="tab" onclick="showTab('perf-dest')">Perf. Destinatário</div>
   <div class="tab" onclick="showTab('barra-perf')">Barra Performance</div>
   <div class="tab" onclick="showTab('transito')">🚚 Em Trânsito</div>
+  <div class="tab tab-menu" id="menu-cadastro" onclick="this.classList.toggle('aberto')">Cadastro ▾
+    <div class="tab-submenu">
+      <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-servico')">Serviço</div>
+    </div>
+  </div>
   <div class="tab" onclick="showTab('mapa')">🗺 Mapa</div>
   <div style="position:relative;margin-left:auto;display:flex;align-items:center;gap:2px">
     <button id="btn-atualizar-agora" class="tab" type="button" style="border:0;background:transparent;cursor:pointer;font:inherit" title="Dispara a extração do portal agora, sem esperar o próximo horário programado (06h/12h/18h/23h59)">🔄 Atualizar Agora</button>
@@ -316,6 +332,23 @@ tr:last-child td{border-bottom:none}
     <table>
       <thead><tr><th>Minuta</th><th>NF</th><th>Cliente</th><th>Destinatário</th><th>Cidade/UF</th><th>Emissão</th><th>Prazo</th><th>Dias Restantes</th><th>Descrição</th></tr></thead>
       <tbody id="tb-transito-dentro"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAB: CADASTRO > SERVICO -->
+<div id="tab-cad-servico" class="content">
+  <div class="table-card">
+    <h3 style="margin-bottom:12px">Cadastro — Serviço</h3>
+    <div class="cad-form">
+      <input id="cad-servico-input" type="text" maxlength="200" placeholder="Digite o serviço..."
+        onkeydown="if(event.key==='Enter')salvarServico()">
+      <button id="cad-servico-btn" class="cad-btn" type="button" onclick="salvarServico()">Salvar</button>
+    </div>
+    <div id="cad-servico-msg" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
+    <table>
+      <thead><tr><th>Serviço</th><th style="width:170px">Cadastrado em</th><th style="width:90px"></th></tr></thead>
+      <tbody id="tb-cad-servico"></tbody>
     </table>
   </div>
 </div>
@@ -1826,10 +1859,120 @@ async function renderMapa() {
 function showTab(id) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
-  event.target.classList.add('active');
+  (event.target.closest('.tab-menu') || event.target).classList.add('active');
   document.getElementById('tab-'+id).classList.add('active');
+  document.querySelector('.filters').style.display = id.startsWith('cad-') ? 'none' : 'flex';
+  if (id === 'cad-servico') carregarServicos();
   if (id === 'mapa') renderMapa();
   if (id === 'transito') renderTransito();
+}
+
+// --- CADASTRO > SERVICO ---
+// Lista compartilhada (todos que abrem o site veem a mesma), guardada no
+// Supabase da PortoEx, tabela app_config (a mesma da Calculadora de Frete),
+// na chave abaixo. Fica fora do index.html de proposito: o pipeline
+// reescreve o RAW a cada rodada, mas nao mexe nisso.
+const SUPABASE_URL = 'https://tgurfzpdpdxpodxewotv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_9DHQudX1xPJEIRzSXGyCgA_u9qxgzWd';
+const CAD_SERVICOS_KEY = 'forte_servicos';
+let _db = null;
+function getDb() {
+  if (!_db && window.supabase) _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  return _db;
+}
+let _servicos = [];
+function cadEsc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function lerServicos() {
+  const db = getDb();
+  if (!db) throw new Error('Supabase indisponível');
+  const { data, error } = await db.from('app_config').select('value').eq('key', CAD_SERVICOS_KEY).maybeSingle();
+  if (error) throw error;
+  return Array.isArray(data && data.value) ? data.value : [];
+}
+
+async function gravarServicos(lista) {
+  const { error } = await getDb().from('app_config')
+    .upsert({ key: CAD_SERVICOS_KEY, value: lista, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
+function cadMsg(txt, erro) {
+  const el = document.getElementById('cad-servico-msg');
+  el.textContent = txt;
+  el.style.color = erro ? '#b91c1c' : '#64748b';
+}
+
+async function carregarServicos() {
+  cadMsg('Carregando...');
+  try {
+    _servicos = await lerServicos();
+    renderServicos();
+    cadMsg(_servicos.length ? '' : 'Nenhum serviço cadastrado ainda.');
+  } catch (e) {
+    console.error(e);
+    cadMsg('Não foi possível carregar os serviços (verifique a conexão).', true);
+  }
+}
+
+function renderServicos() {
+  const tb = document.getElementById('tb-cad-servico');
+  tb.innerHTML = _servicos.map(s => `<tr>
+      <td>${cadEsc(s.nome)}</td>
+      <td>${cadEsc(s.criadoEm || '')}</td>
+      <td style="text-align:right"><button class="cad-del" type="button" onclick="excluirServico('${s.id}')">Excluir</button></td>
+    </tr>`).join('');
+}
+
+async function salvarServico() {
+  const input = document.getElementById('cad-servico-input');
+  const btn = document.getElementById('cad-servico-btn');
+  const nome = input.value.trim();
+  if (!nome) { cadMsg('Digite o serviço antes de salvar.', true); input.focus(); return; }
+  btn.disabled = true;
+  cadMsg('Salvando...');
+  try {
+    // Relê antes de gravar, para nao apagar o que outra pessoa salvou nesse meio tempo.
+    const lista = await lerServicos();
+    if (lista.some(s => s.nome.toUpperCase() === nome.toUpperCase())) {
+      _servicos = lista; renderServicos();
+      cadMsg(`"${nome}" já está cadastrado.`, true);
+      return;
+    }
+    lista.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      nome,
+      criadoEm: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+    });
+    await gravarServicos(lista);
+    _servicos = lista;
+    renderServicos();
+    input.value = '';
+    cadMsg(`"${nome}" salvo.`);
+  } catch (e) {
+    console.error(e);
+    cadMsg('Não foi possível salvar (verifique a conexão).', true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function excluirServico(id) {
+  const alvo = _servicos.find(s => s.id === id);
+  if (!alvo || !confirm(`Excluir o serviço "${alvo.nome}"?`)) return;
+  cadMsg('Excluindo...');
+  try {
+    const lista = (await lerServicos()).filter(s => s.id !== id);
+    await gravarServicos(lista);
+    _servicos = lista;
+    renderServicos();
+    cadMsg(`"${alvo.nome}" excluído.`);
+  } catch (e) {
+    console.error(e);
+    cadMsg('Não foi possível excluir (verifique a conexão).', true);
+  }
 }
 
 // Start

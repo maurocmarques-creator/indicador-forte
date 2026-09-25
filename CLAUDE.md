@@ -45,6 +45,9 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
   - Destinatário/cidade/UF: usa LOCAL/CIDADE/UF ENTREGA; quando vazio (maioria das minutas da Forte),
     cai para DESTINO/CIDADE/UF DESTINO (`atualizar_dashboard.py`).
   - Perf. Destinatário: `DEST_GRUPOS = []` → lista cada destinatário direto (sem a linha DIVERSOS de abrir/fechar da Ansell).
+  - Menu **Cadastro ▾ > Serviço** (aba `tab-cad-servico`): lista compartilhada de serviços, salva no Supabase
+    da PortoEx (o mesmo da Calculadora de Frete, tabela `app_config`, chave `forte_servicos`,
+    array de `{id, nome, criadoEm}`). Relê antes de gravar para não sobrescrever o que outra pessoa salvou.
   - Não editar o `RAW` à mão: ele é regerado a cada rodada do pipeline.
 - `.github/workflows/atualizar-manual.yml` — workflow `workflow_dispatch` disparado pelo
   botão "Atualizar Agora"; roda `python pipeline_atualizar.py` no runner self-hosted,
