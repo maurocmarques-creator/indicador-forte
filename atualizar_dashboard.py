@@ -138,7 +138,18 @@ def build_rows(df, hoje=None):
             prev_entrega = pd.Timestamp(date_over['PREV. ENTREGA'])
 
         tipo = r[tipo_col]
-        eff_uf = r['UF ENTREGA'] if not pd.isna(r['UF ENTREGA']) else ''
+        # Local de entrega efetivo: o portal so preenche LOCAL/CIDADE/UF
+        # ENTREGA quando a entrega e num endereco diferente do destinatario
+        # (na Forte isso fica vazio na maioria das minutas) -- nesses casos
+        # o destinatario/cidade/UF reais estao em DESTINO/CIDADE/UF DESTINO.
+        tem_local_entrega = not pd.isna(r['LOCAL ENTREGA'])
+        sufixo = 'ENTREGA' if tem_local_entrega else 'DESTINO'
+        eff_local = r['LOCAL ENTREGA'] if tem_local_entrega else r.get('DESTINO', '')
+        eff_cidade = r[f'CIDADE {sufixo}'] if f'CIDADE {sufixo}' in r else ''
+        eff_uf = r[f'UF {sufixo}'] if f'UF {sufixo}' in r else ''
+        eff_local = '' if pd.isna(eff_local) else eff_local
+        eff_cidade = '' if pd.isna(eff_cidade) else eff_cidade
+        eff_uf = '' if pd.isna(eff_uf) else eff_uf
         descricao_ultimo = r.get('DESCRICAO ULTIMO', '')
         descricao_ultimo = '' if pd.isna(descricao_ultimo) else descricao_ultimo
         status = STATUS_OVERRIDES.get(
@@ -173,8 +184,8 @@ def build_rows(df, hoje=None):
             'DATA ENTREGA': iso(data_entrega),
             'PREV. ENTREGA': iso(prev_entrega),
             'DATA DE AGENDAMENTO': iso(data_agendamento),
-            'EFF_LOCAL': r['LOCAL ENTREGA'] if not pd.isna(r['LOCAL ENTREGA']) else '',
-            'EFF_CIDADE': r['CIDADE ENTREGA'] if not pd.isna(r['CIDADE ENTREGA']) else '',
+            'EFF_LOCAL': eff_local,
+            'EFF_CIDADE': eff_cidade,
             'DESCRICAO_ULTIMO': descricao_ultimo,
             'OBSERVACOES': OBSERVACOES_TRANSITO.get(minuta, []),
             'EFF_UF': eff_uf,
