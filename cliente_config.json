@@ -1,0 +1,15 @@
+{
+  "id": "forte",
+  "nome_exibicao": "Forte Transportes",
+  "clientes_portal": [
+    "FORTE TRANSPORTES"
+  ],
+  "template_relatorio": "AUDITORIA TELA 106_ANSELL",
+  "prefixo_consolidado": "Base",
+  "onedrive_consolidado": "C:\\Users\\Mauro Cesar Marques\\OneDrive - PORTOEXPRESS LOGISTICA LTDA\\Analise Forte",
+  "email_destino": "mauro.cesar@portoex.com.br",
+  "link_dashboard": "https://forte.portoexapps.com.br/",
+  "status_overrides": {},
+  "date_overrides": {},
+  "observacoes_transito": {}
+}
