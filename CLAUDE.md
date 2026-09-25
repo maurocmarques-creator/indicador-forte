@@ -44,6 +44,7 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
   - `MURAL_URL` vazio → a aba Mural fica escondida até o Mural da Forte ser criado.
   - Destinatário/cidade/UF: usa LOCAL/CIDADE/UF ENTREGA; quando vazio (maioria das minutas da Forte),
     cai para DESTINO/CIDADE/UF DESTINO (`atualizar_dashboard.py`).
+  - Perf. Destinatário: `DEST_GRUPOS = []` → lista cada destinatário direto (sem a linha DIVERSOS de abrir/fechar da Ansell).
   - Não editar o `RAW` à mão: ele é regerado a cada rodada do pipeline.
 - `.github/workflows/atualizar-manual.yml` — workflow `workflow_dispatch` disparado pelo
   botão "Atualizar Agora"; roda `python pipeline_atualizar.py` no runner self-hosted,

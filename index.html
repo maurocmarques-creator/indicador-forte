@@ -1049,8 +1049,11 @@ function renderPerformance() {
 }
 
 // --- TAB: PERF DESTINATÁRIO ---
-const DEST_GRUPOS = ['NORTEL','CORSUL','DIMENSIONAL','BUNZL'];
+// Forte: sem destinatarios-chave -> lista cada destinatario direto (sem a
+// linha DIVERSOS de abrir/fechar). Para agrupar, basta listar os nomes aqui.
+const DEST_GRUPOS = [];
 function classifyDest(nome) {
+  if (!DEST_GRUPOS.length) return (nome||'').trim() || 'Não informado';
   const up = (nome||'').toUpperCase();
   for (const g of DEST_GRUPOS) { if (up.includes(g)) return g; }
   return 'DIVERSOS';
