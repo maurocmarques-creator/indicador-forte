@@ -639,6 +639,13 @@ function init() {
   const fUf = document.getElementById('f-uf');
   ufs.forEach(u => { const o=document.createElement('option'); o.value=u; o.text=u; fUf.add(o); });
 
+  // Regiao: mostra so as regioes que tem minutas (a lista fixa do HTML
+  // traria regioes vazias, ex. Norte, e confundiria o cliente).
+  const regioesComDados = new Set(allRows.map(r => r.REGIAO).filter(Boolean));
+  [...document.getElementById('f-regiao').options].forEach(o => {
+    if (o.value && !regioesComDados.has(o.value)) o.remove();
+  });
+
   // Populate Ano filter (unique years from meses)
   const fAno = document.getElementById('f-ano');
   const anos = [...new Set(meses.map(m => m.split('-')[0]))].sort();
