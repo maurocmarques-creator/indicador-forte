@@ -340,7 +340,7 @@ tr:last-child td{border-bottom:none}
 <div id="tab-cad-servico" class="content">
   <div class="table-card">
     <h3 style="margin-bottom:12px">Cadastro — Serviço</h3>
-    <div class="cad-form">
+    <div class="cad-form" id="cad-servico-form" style="display:none">
       <input id="cad-servico-input" type="text" maxlength="200" placeholder="Digite o serviço..."
         onkeydown="if(event.key==='Enter')salvarServico()">
       <button id="cad-servico-btn" class="cad-btn" type="button" onclick="salvarServico()">Salvar</button>
@@ -1881,6 +1881,24 @@ function getDb() {
   return _db;
 }
 let _servicos = [];
+
+// Quem pode incluir/excluir: o e-mail vem do login do Cloudflare Access
+// (endpoint /cdn-cgi/access/get-identity, mesmo dominio). Os demais (ex.:
+// o cliente) so veem a lista. Obs.: e uma trava de tela -- a chave do
+// Supabase continua no codigo da pagina.
+const CAD_EDITORES = ['mauro.cesar@portoex.com.br', 'brenda.elicia@portoex.com.br'];
+let _cadPodeEditar = null;
+async function cadPodeEditar() {
+  if (_cadPodeEditar !== null) return _cadPodeEditar;
+  try {
+    const r = await fetch('/cdn-cgi/access/get-identity', { credentials: 'same-origin' });
+    const id = r.ok ? await r.json() : {};
+    _cadPodeEditar = CAD_EDITORES.includes(String(id.email || '').toLowerCase());
+  } catch (e) {
+    _cadPodeEditar = false;
+  }
+  return _cadPodeEditar;
+}
 function cadEsc(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -1908,6 +1926,8 @@ function cadMsg(txt, erro) {
 async function carregarServicos() {
   cadMsg('Carregando...');
   try {
+    const podeEditar = await cadPodeEditar();
+    document.getElementById('cad-servico-form').style.display = podeEditar ? 'flex' : 'none';
     _servicos = await lerServicos();
     renderServicos();
     cadMsg(_servicos.length ? '' : 'Nenhum serviço cadastrado ainda.');
@@ -1922,7 +1942,7 @@ function renderServicos() {
   tb.innerHTML = _servicos.map(s => `<tr>
       <td>${cadEsc(s.nome)}</td>
       <td>${cadEsc(s.criadoEm || '')}</td>
-      <td style="text-align:right"><button class="cad-del" type="button" onclick="excluirServico('${s.id}')">Excluir</button></td>
+      <td style="text-align:right">${_cadPodeEditar ? `<button class="cad-del" type="button" onclick="excluirServico('${s.id}')">Excluir</button>` : ''}</td>
     </tr>`).join('');
 }
 
@@ -1930,6 +1950,7 @@ async function salvarServico() {
   const input = document.getElementById('cad-servico-input');
   const btn = document.getElementById('cad-servico-btn');
   const nome = input.value.trim();
+  if (!(await cadPodeEditar())) { cadMsg('Somente leitura.', true); return; }
   if (!nome) { cadMsg('Digite o serviço antes de salvar.', true); input.focus(); return; }
   btn.disabled = true;
   cadMsg('Salvando...');
@@ -1961,6 +1982,7 @@ async function salvarServico() {
 
 async function excluirServico(id) {
   const alvo = _servicos.find(s => s.id === id);
+  if (!(await cadPodeEditar())) return;
   if (!alvo || !confirm(`Excluir o serviço "${alvo.nome}"?`)) return;
   cadMsg('Excluindo...');
   try {
