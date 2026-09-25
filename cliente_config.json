@@ -9,6 +9,12 @@
   "onedrive_consolidado": "C:\\Users\\Mauro Cesar Marques\\OneDrive - PORTOEXPRESS LOGISTICA LTDA\\Analise Forte",
   "email_destino": "mauro.cesar@portoex.com.br",
   "link_dashboard": "https://forte.portoexapps.com.br/",
+  "grafia_destinatario": {
+    "MRH VEICULOS LTDA.": "MRH VEICULOS LTDA",
+    "MRH VEICULOS": "MRH VEICULOS LTDA",
+    "MRH VEICULOS LTDA BLN": "MRH VEICULOS LTDA",
+    "MRH VEICULOS LTDA BLUMENAU": "MRH VEICULOS LTDA"
+  },
   "status_overrides": {},
   "date_overrides": {},
   "observacoes_transito": {}

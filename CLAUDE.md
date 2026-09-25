@@ -24,6 +24,8 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     (`OneDrive - PORTOEXPRESS LOGISTICA LTDA\Analise Forte`).
   - `email_destino`, `link_dashboard`, `nome_exibicao` (usado no assunto/remetente do e-mail).
   - `status_overrides` / `date_overrides`: correções manuais por MINUTA (status errado, data digitada errada no portal).
+  - `grafia_destinatario`: padroniza nomes de destinatário escritos de jeitos diferentes no portal
+    (ex.: variações de "MRH VEICULOS" → "MRH VEICULOS LTDA"); só troca o nome, cidade/UF ficam as originais.
   - `observacoes_transito`: mensagens do Mural por MINUTA (preenchido pela sincronização do Mural).
 - `extrair_portal.py` — Playwright: login no portal Brudam → relatório 106 Emissões →
   filtro cliente + período (01/01 do ano até ontem) → Personalizado Excel → baixa o xlsx.
@@ -40,6 +42,8 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     de volume/faturamento), logo da Forte Logística no lugar dos logos Ansell/Hercules (+ logo PortoEx).
   - `GH_REPO = 'indicador-forte'`, `GH_TOKEN_KEY = 'indicador_forte_gh_token'`.
   - `MURAL_URL` vazio → a aba Mural fica escondida até o Mural da Forte ser criado.
+  - Destinatário/cidade/UF: usa LOCAL/CIDADE/UF ENTREGA; quando vazio (maioria das minutas da Forte),
+    cai para DESTINO/CIDADE/UF DESTINO (`atualizar_dashboard.py`).
   - Não editar o `RAW` à mão: ele é regerado a cada rodada do pipeline.
 - `.github/workflows/atualizar-manual.yml` — workflow `workflow_dispatch` disparado pelo
   botão "Atualizar Agora"; roda `python pipeline_atualizar.py` no runner self-hosted,

@@ -41,6 +41,12 @@ DATE_OVERRIDES = CONFIG.get("date_overrides", {})
 #   [{"autor": "Nome", "texto": "...", "data": "17/09/2026 14:30"}, ...]
 OBSERVACOES_TRANSITO = CONFIG.get("observacoes_transito", {})
 
+# Padroniza a grafia do destinatario quando o mesmo cadastro aparece
+# escrito de jeitos diferentes no portal (ex.: "MRH VEICULOS LTDA." e
+# "MRH VEICULOS" -> "MRH VEICULOS LTDA"). So troca o nome exibido; a
+# cidade/UF de cada minuta continua a original.
+GRAFIA_DESTINATARIO = CONFIG.get("grafia_destinatario", {})
+
 UF_REGIAO = {
     'AC': 'Norte', 'AP': 'Norte', 'AM': 'Norte', 'PA': 'Norte', 'RO': 'Norte', 'RR': 'Norte', 'TO': 'Norte',
     'AL': 'Nordeste', 'BA': 'Nordeste', 'CE': 'Nordeste', 'MA': 'Nordeste', 'PB': 'Nordeste',
@@ -148,6 +154,7 @@ def build_rows(df, hoje=None):
         eff_cidade = r[f'CIDADE {sufixo}'] if f'CIDADE {sufixo}' in r else ''
         eff_uf = r[f'UF {sufixo}'] if f'UF {sufixo}' in r else ''
         eff_local = '' if pd.isna(eff_local) else eff_local
+        eff_local = GRAFIA_DESTINATARIO.get(eff_local.strip(), eff_local)
         eff_cidade = '' if pd.isna(eff_cidade) else eff_cidade
         eff_uf = '' if pd.isna(eff_uf) else eff_uf
         descricao_ultimo = r.get('DESCRICAO ULTIMO', '')
