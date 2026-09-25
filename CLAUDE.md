@@ -37,7 +37,7 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
   Abas: Totais, Totais por CX, Performance, Perf. Destinatário, Barra Performance,
   Em Trânsito, Mapa, botão "Atualizar Agora" e link do Mural.
   - Diferenças em relação à Ansell: sem a aba **Expectativa** (a Forte não tem previsão
-    de volume/faturamento), sem logos do cliente (só o texto "Forte Transportes" + logo PortoEx).
+    de volume/faturamento), logo da Forte Logística no lugar dos logos Ansell/Hercules (+ logo PortoEx).
   - `GH_REPO = 'indicador-forte'`, `GH_TOKEN_KEY = 'indicador_forte_gh_token'`.
   - `MURAL_URL` vazio → a aba Mural fica escondida até o Mural da Forte ser criado.
   - Não editar o `RAW` à mão: ele é regerado a cada rodada do pipeline.
