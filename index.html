@@ -40,10 +40,26 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .tf-simnao{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:.8rem}
 .tf-comp{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:.82rem}
 .tf-comp label{display:flex;align-items:center;gap:6px;cursor:pointer}
-.tf-regras{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.tf-regras{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .tf-regra{border:1px solid var(--border);border-left:4px solid var(--primary-light);border-radius:6px;padding:10px 12px;background:#f8fafc}
 .tf-regra-tit{font-weight:700;font-size:.82rem;color:var(--primary);margin-bottom:4px}
 .tf-regra-vazia{font-size:.74rem;color:#94a3b8;font-style:italic}
+.tf-regra input{width:100%;border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:.8rem;background:#fff}
+.tf-campos{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px}
+.tf-campos label{font-size:.7rem;color:#475569;display:flex;flex-direction:column;gap:2px}
+.sim-num input{border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:.84rem}
+.tf-dica{font-size:.7rem;color:#64748b;margin-top:4px}
+.tf-faixa,.tf-faixa-cab{display:grid;grid-template-columns:1fr 1fr 1fr 22px;gap:4px;align-items:center;margin-bottom:3px}
+.tf-faixa-cab span{font-size:.66rem;color:#64748b}
+.tf-del-faixa{border:0;background:transparent;color:#b91c1c;cursor:pointer;font-size:.8rem}
+.tf-add-faixa{border:1px dashed var(--primary-light);background:#fff;color:var(--primary-light);border-radius:5px;padding:2px 8px;font-size:.72rem;cursor:pointer;margin-top:2px}
+.tr-form{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px}
+.tr-par{display:flex;gap:6px}
+.tr-par select,.tr-par input{border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:.84rem;background:#fff}
+.tr-par input{min-width:200px;flex:1}
+.sim-cab{font-size:.82rem;margin-bottom:10px;line-height:1.6}
+.sim-total td{font-weight:800;background:#f0f4ff;border-top:2px solid var(--primary-light)}
+.sim-aviso{margin-top:10px;padding:8px 10px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:4px;font-size:.78rem;color:#92400e}
 .cad-del{background:transparent;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
 .filters{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters label{font-size:.75rem;color:var(--gray);font-weight:600}
@@ -112,6 +128,7 @@ tr:last-child td{border-bottom:none}
       <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-tabela')">Tabela</div>
     </div>
   </div>
+  <div class="tab" onclick="showTab('simulador')">🧮 Simulador</div>
   <div class="tab active" onclick="showTab('totais')">Totais</div>
   <div class="tab" onclick="showTab('totais-cx')">Totais por CX</div>
   <div class="tab" onclick="showTab('performance')">Performance</div>
@@ -376,11 +393,42 @@ tr:last-child td{border-bottom:none}
     </div>
     <div id="cad-tabela-msg" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
     <table>
-      <thead><tr><th>Nome da tabela</th><th style="width:130px">Vigência</th><th style="width:100px">Tipo</th><th style="width:110px">Composição</th></tr></thead>
+      <thead><tr><th>Nome da tabela</th><th>Serviço</th><th style="width:120px">Vigência</th><th style="width:90px">Tipo</th><th style="width:110px">Trechos</th></tr></thead>
       <tbody id="tb-cad-tabela"></tbody>
     </table>
   </div>
   <div class="table-card" id="cad-tabela-form" style="display:none"></div>
+  <div class="table-card" id="cad-tabela-trechos" style="display:none"></div>
+</div>
+
+<!-- TAB: SIMULADOR (logica em simulador.js) -->
+<div id="tab-simulador" class="content">
+  <div class="tf-grid" style="grid-template-columns:minmax(280px,380px) 1fr;align-items:start">
+    <div class="table-card tf-col">
+      <h3 style="margin-bottom:12px">Simulador de frete</h3>
+      <div id="sim-msg" style="font-size:.78rem;color:#64748b;margin-bottom:8px"></div>
+      <label class="tf-lbl">Serviço</label>
+      <select id="sim-servico" style="width:100%;margin-bottom:10px" onchange="simAtualizarTabelas()"></select>
+      <label class="tf-lbl">Tabela</label>
+      <select id="sim-tabela" style="width:100%;margin-bottom:10px"></select>
+      <label class="tf-lbl">Data do frete <span style="font-weight:400;color:#64748b">(define a vigência)</span></label>
+      <input id="sim-data" type="date" style="margin-bottom:10px">
+      <label class="tf-lbl">Origem</label>
+      <div class="tr-par" style="margin-bottom:10px"><select id="sim-ouf"></select><input id="sim-ocid" type="text" list="sim-cidades" placeholder="Cidade"></div>
+      <label class="tf-lbl">Destino</label>
+      <div class="tr-par" style="margin-bottom:10px"><select id="sim-duf"></select><input id="sim-dcid" type="text" list="sim-cidades" placeholder="Cidade"></div>
+      <datalist id="sim-cidades"></datalist>
+      <div class="tf-campos sim-num">
+        <label>Peso (kg)<input id="sim-peso" type="text" inputmode="decimal"></label>
+        <label>M³<input id="sim-m3" type="text" inputmode="decimal"></label>
+        <label>Valor da NF (R$)<input id="sim-nf" type="text" inputmode="decimal"></label>
+        <label>Valor do CT-e (R$)<input id="sim-cte" type="text" inputmode="decimal" placeholder="opcional"></label>
+      </div>
+      <div class="tf-dica" style="margin:4px 0 12px">Valor do CT-e: base do "% sobre CT-e". Em branco, usa a soma dos demais itens.</div>
+      <button class="cad-btn" type="button" onclick="simular()" style="width:100%">Calcular</button>
+    </div>
+    <div class="table-card" id="sim-resultado"><div style="color:#64748b;font-size:.85rem">Preencha ao lado e clique em Calcular.</div></div>
+  </div>
 </div>
 
 <!-- TAB: MAPA -->
@@ -1891,9 +1939,10 @@ function showTab(id) {
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
   (event.target.closest('.tab-menu') || event.target).classList.add('active');
   document.getElementById('tab-'+id).classList.add('active');
-  document.querySelector('.filters').style.display = id.startsWith('cad-') ? 'none' : 'flex';
+  document.querySelector('.filters').style.display = (id.startsWith('cad-') || id === 'simulador') ? 'none' : 'flex';
   if (id === 'cad-servico') carregarServicos();
   if (id === 'cad-tabela') carregarTabelas();
+  if (id === 'simulador') carregarSimulador();
   if (id === 'mapa') renderMapa();
   if (id === 'transito') renderTransito();
 }
@@ -2031,6 +2080,8 @@ async function excluirServico(id) {
 // Start
 init();
 </script>
+<script src="frete-calculo.js"></script>
 <script src="cadastro-tabela.js"></script>
+<script src="simulador.js"></script>
 </body>
 </html>

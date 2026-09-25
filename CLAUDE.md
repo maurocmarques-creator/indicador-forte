@@ -50,12 +50,24 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     array de `{id, nome, criadoEm}`). Relê antes de gravar para não sobrescrever o que outra pessoa salvou.
     Só `CAD_EDITORES` (mauro.cesar@ e brenda.elicia@portoex.com.br) incluem/excluem — o e-mail vem do
     Cloudflare Access (`/cdn-cgi/access/get-identity`); os demais (cliente) só veem. Trava só de tela.
-  - Menu **Cadastro ▾ > Tabela** (aba `tab-cad-tabela`, lógica em `cadastro-tabela.js`): tabelas de frete
-    (nome, referência, tipo Venda/Compra, vigência, precisão, opções SIM/NÃO de ICMS/desconto/acréscimo/tarifa
-    e a composição — itens marcados de `TAB_COMPOSICAO`). Salvas no Supabase, `app_config`, chave genérica
-    `cadastro_tabelas` (sem "forte" no nome: vai ser lida por outros projetos) — o formato está no topo do
-    `cadastro-tabela.js`. `regras` de cada item ainda **a definir** (o usuário vai passar as regras item a item).
-    Não renomear as chaves de `TAB_COMPOSICAO` já gravadas. Mesmos editores de `CAD_EDITORES`.
+  - Menu **Cadastro ▾ > Tabela** (aba `tab-cad-tabela`, `cadastro-tabela.js`): tabelas de frete — nome, referência,
+    **serviço** (do cadastro Serviço), tipo Venda/Compra, vigência, precisão, opções SIM/NÃO, **composição** (itens de
+    `TAB_COMPOSICAO`), **regras** de cada item (da tabela, valem para todos os trechos) e **trechos** (origem UF/cidade →
+    destino UF/cidade; cidade vazia = estado todo). Ao salvar a tabela abre a tela de trechos.
+    Salvas no Supabase, `app_config`, chave genérica `cadastro_tabelas` (outros projetos vão ler) — formato no topo do
+    `cadastro-tabela.js`. Não renomear chaves de `TAB_COMPOSICAO` já gravadas. Mesmos editores de `CAD_EDITORES`.
+  - `frete-calculo.js`: motor sem tela (reusar na auditoria Excel × tabela e em outros projetos). Tipos de regra:
+    PCT_NF (% sobre valor da mercadoria: GRIS, Advalorem, % sobre NF), PCT_CTE (% sobre CT-e; sem CT-e informado usa a
+    soma dos demais itens), FIXO (TDE, TAS, TRT, Despacho, SET/CAT), FRACAO (pedágio por fração: ⌈peso÷fração⌉×valor),
+    FAIXA_PESO (Frete Coleta/Entrega: peso × R$/kg da faixa), FAIXA_M3 (Taxa por m³: m³ × R$/m³ da faixa). Todos têm
+    preço mínimo e franquia de peso (peso até a franquia → vale o mínimo). **A definir**: Pedágio, Peso por Fração,
+    Taxa por NF (entram como R$ 0 com aviso) e o uso das opções SIM/NÃO (ex.: soma ICMS) no cálculo.
+    Escolha da tabela (`freteAcharTabela`): mesmo serviço, vigência ≤ data, trecho que casa; vence a vigência mais
+    recente, depois o trecho mais específico. Itens removidos a pedido: Redespacho, KM rodado, Faixas de peso, Volume,
+    Taxa de emergência, Percentual sobre custos.
+  - Aba **🧮 Simulador** (`simulador.js`): escolhe serviço/tabela (ou automática), data, origem, destino, peso, m³,
+    valor NF e CT-e e mostra o cálculo item a item. Só lê, não grava.
+  - Próximo passo combinado: auditoria entre o Excel do portal (planilha do projeto) e as tabelas cadastradas.
   - Não editar o `RAW` à mão: ele é regerado a cada rodada do pipeline.
 - `.github/workflows/atualizar-manual.yml` — workflow `workflow_dispatch` disparado pelo
   botão "Atualizar Agora"; roda `python pipeline_atualizar.py` no runner self-hosted,
