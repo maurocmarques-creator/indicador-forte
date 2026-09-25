@@ -50,6 +50,12 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     array de `{id, nome, criadoEm}`). Relê antes de gravar para não sobrescrever o que outra pessoa salvou.
     Só `CAD_EDITORES` (mauro.cesar@ e brenda.elicia@portoex.com.br) incluem/excluem — o e-mail vem do
     Cloudflare Access (`/cdn-cgi/access/get-identity`); os demais (cliente) só veem. Trava só de tela.
+  - Menu **Cadastro ▾ > Tabela** (aba `tab-cad-tabela`, lógica em `cadastro-tabela.js`): tabelas de frete
+    (nome, referência, tipo Venda/Compra, vigência, precisão, opções SIM/NÃO de ICMS/desconto/acréscimo/tarifa
+    e a composição — itens marcados de `TAB_COMPOSICAO`). Salvas no Supabase, `app_config`, chave genérica
+    `cadastro_tabelas` (sem "forte" no nome: vai ser lida por outros projetos) — o formato está no topo do
+    `cadastro-tabela.js`. `regras` de cada item ainda **a definir** (o usuário vai passar as regras item a item).
+    Não renomear as chaves de `TAB_COMPOSICAO` já gravadas. Mesmos editores de `CAD_EDITORES`.
   - Não editar o `RAW` à mão: ele é regerado a cada rodada do pipeline.
 - `.github/workflows/atualizar-manual.yml` — workflow `workflow_dispatch` disparado pelo
   botão "Atualizar Agora"; roda `python pipeline_atualizar.py` no runner self-hosted,

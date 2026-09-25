@@ -31,6 +31,19 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .cad-form input{flex:1;min-width:220px;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:.85rem}
 .cad-btn{background:var(--primary);color:#fff;border:0;border-radius:6px;padding:8px 18px;font-size:.82rem;font-weight:600;cursor:pointer}
 .cad-btn:disabled{opacity:.6;cursor:default}
+.tf-grid{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:24px}
+@media (max-width:760px){.tf-grid{grid-template-columns:1fr}}
+.tf-col input[type=text],.tf-col input[type=date],.tf-col select{border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:.84rem;background:#fff;color:#1e293b}
+.tf-col input[type=text]{width:100%;margin-bottom:10px}
+.tf-lbl{display:block;font-size:.76rem;font-weight:700;color:var(--primary);margin:0 0 5px;border-bottom:1px solid var(--border);padding-bottom:3px}
+.tf-linha{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.tf-simnao{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:.8rem}
+.tf-comp{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:.82rem}
+.tf-comp label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.tf-regras{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.tf-regra{border:1px solid var(--border);border-left:4px solid var(--primary-light);border-radius:6px;padding:10px 12px;background:#f8fafc}
+.tf-regra-tit{font-weight:700;font-size:.82rem;color:var(--primary);margin-bottom:4px}
+.tf-regra-vazia{font-size:.74rem;color:#94a3b8;font-style:italic}
 .cad-del{background:transparent;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
 .filters{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters label{font-size:.75rem;color:var(--gray);font-weight:600}
@@ -96,6 +109,7 @@ tr:last-child td{border-bottom:none}
   <div class="tab tab-menu" id="menu-cadastro" onclick="this.classList.toggle('aberto')">Cadastro ▾
     <div class="tab-submenu">
       <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-servico')">Serviço</div>
+      <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-tabela')">Tabela</div>
     </div>
   </div>
   <div class="tab active" onclick="showTab('totais')">Totais</div>
@@ -351,6 +365,22 @@ tr:last-child td{border-bottom:none}
       <tbody id="tb-cad-servico"></tbody>
     </table>
   </div>
+</div>
+
+<!-- TAB: CADASTRO > TABELA (logica em cadastro-tabela.js) -->
+<div id="tab-cad-tabela" class="content">
+  <div class="table-card" id="cad-tabela-lista">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <h3 style="margin:0">Cadastro — Tabelas</h3>
+      <button id="cad-tabela-nova" class="cad-btn" type="button" onclick="novaTabela()" style="display:none">+ Cadastrar nova tabela</button>
+    </div>
+    <div id="cad-tabela-msg" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
+    <table>
+      <thead><tr><th>Nome da tabela</th><th style="width:130px">Vigência</th><th style="width:100px">Tipo</th><th style="width:110px">Composição</th></tr></thead>
+      <tbody id="tb-cad-tabela"></tbody>
+    </table>
+  </div>
+  <div class="table-card" id="cad-tabela-form" style="display:none"></div>
 </div>
 
 <!-- TAB: MAPA -->
@@ -1863,6 +1893,7 @@ function showTab(id) {
   document.getElementById('tab-'+id).classList.add('active');
   document.querySelector('.filters').style.display = id.startsWith('cad-') ? 'none' : 'flex';
   if (id === 'cad-servico') carregarServicos();
+  if (id === 'cad-tabela') carregarTabelas();
   if (id === 'mapa') renderMapa();
   if (id === 'transito') renderTransito();
 }
@@ -2000,5 +2031,6 @@ async function excluirServico(id) {
 // Start
 init();
 </script>
+<script src="cadastro-tabela.js"></script>
 </body>
 </html>
