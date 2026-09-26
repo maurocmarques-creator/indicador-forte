@@ -50,6 +50,8 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .sim-num input{border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:.84rem}
 .tf-dica{font-size:.7rem;color:#64748b;margin-top:4px}
 .tf-faixa,.tf-faixa-cab{display:grid;grid-template-columns:1fr 1fr 1fr 22px;gap:4px;align-items:center;margin-bottom:3px}
+.tf-faixa-kg,.tf-faixa-cab-kg{grid-template-columns:repeat(5,1fr) 22px}
+.tf-regra:has(.tf-faixa-kg){grid-column:span 2}
 .tf-faixa-cab span{font-size:.66rem;color:#64748b}
 .tf-del-faixa{border:0;background:transparent;color:#b91c1c;cursor:pointer;font-size:.8rem}
 .tf-add-faixa{border:1px dashed var(--primary-light);background:#fff;color:var(--primary-light);border-radius:5px;padding:2px 8px;font-size:.72rem;cursor:pointer;margin-top:2px}

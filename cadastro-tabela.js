@@ -12,7 +12,8 @@
 //      somaIcms, descontoIcmsFretePeso, permiteDesconto, permiteAcrescimo,
 //      negociaTarifa (booleans),
 //      composicao: ['GRIS', ...],            // itens marcados (TAB_COMPOSICAO)
-//      regras: { GRIS: {pct, minimo, franquia}, FRETE_COLETA: {faixas:[{de,ate,valor}], minimo, franquia}, ... },
+//      regras: { GRIS: {pct, minimo}, FRETE_COLETA: {faixas:[{de,ate,franquia,valorFranquia,valor}], minimo}, ... },
+//              (regra de cada tipo e franquia: ver topo do frete-calculo.js)
 //      trechos: [{ id, origemUf, origemCidade, destinoUf, destinoCidade }], // cidade '' = estado todo
 //      criadoEm, atualizadoEm (ISO) }, ...]
 // As regras sao da tabela (valem para todos os trechos dela); os trechos
@@ -199,11 +200,8 @@ function tabColetarRegras() {
       if (!inp.closest('.tf-faixa')) r[inp.dataset.campo] = freteNum(inp.value);
     });
     if (bl.querySelector('.tf-faixas')) {
-      r.faixas = [...bl.querySelectorAll('.tf-faixa')].map(row => ({
-        de: freteNum(row.querySelector('[data-campo=de]').value),
-        ate: freteNum(row.querySelector('[data-campo=ate]').value),
-        valor: freteNum(row.querySelector('[data-campo=valor]').value),
-      }));
+      r.faixas = [...bl.querySelectorAll('.tf-faixa')].map(row =>
+        Object.fromEntries([...row.querySelectorAll('[data-campo]')].map(i => [i.dataset.campo, freteNum(i.value)])));
     }
     _tabRegras[k] = r;
   });
@@ -228,25 +226,31 @@ function tabBlocoRegra(k) {
       corpo = `<div class="tf-campos">${tabCampo('valor', 'Valor fixo (R$)', r.valor, 'em branco = não cobra')}</div>`;
       break;
     case 'FRACAO':
-      corpo = `<div class="tf-campos">${tabCampo('fracaoKg', 'Fração (kg)', r.fracaoKg, 'ex.: 100')}${tabCampo('valor', 'Valor por fração (R$)', r.valor)}</div>
-        <div class="tf-dica">peso ÷ fração, arredonda para cima, × valor</div>`;
+      corpo = `<div class="tf-campos">${tabCampo('fracaoKg', 'Fração (kg)', r.fracaoKg, 'ex.: 100')}${tabCampo('valor', 'Valor por fração (R$)', r.valor)}
+          ${tabCampo('franquia', 'Franquia (kg)', r.franquia, 'opcional')}${tabCampo('valorFranquia', 'Valor da franquia (R$)', r.valorFranquia)}</div>
+        <div class="tf-dica">peso ÷ fração, arredonda para cima, × valor. Com franquia: até a franquia cobra o valor dela; acima, valor da franquia + (excedente ÷ fração, arredonda para cima) × valor</div>`;
       break;
     case 'FAIXA_PESO':
     case 'FAIXA_M3': {
-      const un = tipo === 'FAIXA_PESO' ? 'kg' : 'm³';
-      const faixas = r.faixas && r.faixas.length ? r.faixas : [{ de: null, ate: null, valor: null }];
+      const porPeso = tipo === 'FAIXA_PESO';
+      const un = porPeso ? 'kg' : 'm³';
+      const faixas = r.faixas && r.faixas.length ? r.faixas : [{}];
+      const inp = (f, campo, ph) => `<input type="text" inputmode="decimal" data-campo="${campo}" value="${tabInp(f[campo])}"${ph ? ` placeholder="${ph}"` : ''}>`;
+      const cls = porPeso ? 'tf-faixa tf-faixa-kg' : 'tf-faixa';
       corpo = `<div class="tf-faixas">
-          <div class="tf-faixa-cab"><span>De (${un})</span><span>Até (${un})</span><span>R$ por ${un}</span><span></span></div>
+          <div class="${cls.replace('tf-faixa', 'tf-faixa-cab')}"><span>De (${un})</span><span>Até (${un})</span>
+            ${porPeso ? '<span>Franquia (kg)</span><span>Valor franquia (R$)</span><span>R$/kg excedente</span>' : `<span>R$ por ${un}</span>`}<span></span></div>
           ${faixas.map((f, i) => `
-            <div class="tf-faixa">
-              <input type="text" inputmode="decimal" data-campo="de" value="${tabInp(f.de)}" placeholder="0">
-              <input type="text" inputmode="decimal" data-campo="ate" value="${tabInp(f.ate)}" placeholder="vazio = acima">
-              <input type="text" inputmode="decimal" data-campo="valor" value="${tabInp(f.valor)}">
+            <div class="${cls}">
+              ${inp(f, 'de', '0')}${inp(f, 'ate', 'vazio = acima')}
+              ${porPeso ? inp(f, 'franquia', 'opcional') + inp(f, 'valorFranquia') : ''}${inp(f, 'valor')}
               <button type="button" class="tf-del-faixa" title="Remover faixa" onclick="tabDelFaixa('${k}',${i})">✕</button>
             </div>`).join('')}
           <button type="button" class="tf-add-faixa" onclick="tabAddFaixa('${k}')">+ faixa</button>
         </div>
-        <div class="tf-dica">${un === 'kg' ? 'peso' : 'm³'} × valor da faixa em que ele cair</div>`;
+        <div class="tf-dica">${porPeso
+          ? 'Sem franquia: peso × R$/kg da faixa. Com franquia: até a franquia cobra o valor dela; acima, valor da franquia + (peso − franquia) × R$/kg excedente. Ex.: franquia 10 kg = R$ 200, excedente R$ 0,50 → 100 kg = 200 + 90 × 0,50 = R$ 245'
+          : 'm³ × valor da faixa em que ele cair'}</div>`;
       break;
     }
     default:
@@ -260,7 +264,6 @@ function tabBlocoRegra(k) {
       ${corpo}
       <div class="tf-campos" style="margin-top:6px">
         ${tabCampo('minimo', 'Preço mínimo (R$)', r.minimo)}
-        ${tabCampo('franquia', 'Franquia de peso (kg)', r.franquia)}
       </div>
     </div>`;
 }
@@ -282,7 +285,8 @@ function tabAddFaixa(k) {
   // Sugere o "de" logo depois do "ate" da ultima faixa (ex.: ate 1 -> de 1,01).
   const ult = r.faixas[r.faixas.length - 1];
   const de = ult && ult.ate !== null && ult.ate !== undefined ? Math.round((ult.ate + 0.01) * 100) / 100 : null;
-  r.faixas.push({ de, ate: null, valor: null });
+  // Repete a franquia da faixa anterior (geralmente e a mesma).
+  r.faixas.push({ de, ate: null, franquia: ult ? ult.franquia : null, valorFranquia: null, valor: null });
   tabRenderRegras(true);
 }
 
@@ -305,10 +309,12 @@ function tabRegrasParaGravar(composicao) {
   for (const k of composicao) {
     const r = { ...(_tabRegras[k] || {}) };
     if (r.faixas) {
-      r.faixas = r.faixas.filter(f => f.de !== null || f.ate !== null || f.valor !== null)
-        .map(f => ({ de: f.de ?? 0, ate: f.ate, valor: f.valor ?? 0 }))
+      r.faixas = r.faixas.filter(f => Object.values(f).some(v => v !== null && v !== undefined))
+        .map(f => ({ ...f, de: f.de ?? 0, ate: f.ate ?? null, valor: f.valor ?? 0 }))
         .sort((a, b) => a.de - b.de);
     }
+    // Franquia no nivel do item so existe na regra por fracao (nas faixas de peso ela fica em cada faixa).
+    if (TAB_TIPO[k] !== 'FRACAO') { delete r.franquia; delete r.valorFranquia; }
     out[k] = r;
   }
   return out;

@@ -58,9 +58,11 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     `cadastro-tabela.js`. Não renomear chaves de `TAB_COMPOSICAO` já gravadas. Mesmos editores de `CAD_EDITORES`.
   - `frete-calculo.js`: motor sem tela (reusar na auditoria Excel × tabela e em outros projetos). Tipos de regra:
     PCT_NF (% sobre valor da mercadoria: GRIS, Advalorem, % sobre NF), PCT_CTE (% sobre CT-e; sem CT-e informado usa a
-    soma dos demais itens), FIXO (TDE, TAS, TRT, Despacho, SET/CAT), FRACAO (pedágio por fração: ⌈peso÷fração⌉×valor),
-    FAIXA_PESO (Frete Coleta/Entrega: peso × R$/kg da faixa), FAIXA_M3 (Taxa por m³: m³ × R$/m³ da faixa). Todos têm
-    preço mínimo e franquia de peso (peso até a franquia → vale o mínimo). **A definir**: Pedágio, Peso por Fração,
+    soma dos demais itens), FIXO (TDE, TAS, TRT, Despacho, SET/CAT), FRACAO (Pedágio e Pedágio por fração:
+    ⌈peso÷fração⌉×valor), FAIXA_PESO (Frete Coleta/Entrega: peso × R$/kg da faixa), FAIXA_M3 (Taxa por m³). Todos têm
+    preço mínimo. **Franquia** (só onde a base é kg — em cada faixa de peso e na regra por fração): até a franquia
+    cobra o valor da franquia; acima, valor da franquia + excedente pela regra (ex. do usuário: faixa 0–3000, franquia
+    10 kg = R$ 200, excedente R$ 0,50/kg → 100 kg = 200 + 90×0,50 = R$ 245). **A definir**: Peso por Fração,
     Taxa por NF (entram como R$ 0 com aviso) e o uso das demais opções SIM/NÃO no cálculo.
     **ICMS**: se a tabela tem "Soma ICMS ao frete" = SIM, total = soma dos itens ÷ (1 − alíquota UF origem→destino).
   - Menu **Cadastro ▾ > ICMS** (aba `tab-cad-icms`, `cadastro-icms.js`): matriz UF origem × destino com a alíquota

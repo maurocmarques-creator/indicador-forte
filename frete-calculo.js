@@ -10,13 +10,16 @@
 //   PCT_NF     % sobre o valor da mercadoria (NF)          regra: {pct}
 //   PCT_CTE    % sobre o valor do CT-e                      regra: {pct}
 //   FIXO       valor fixo, somado se informado             regra: {valor}
-//   FRACAO     arred. p/ cima(peso / fracao) x valor       regra: {fracaoKg, valor}
-//   FAIXA_PESO peso x valor da faixa de peso               regra: {faixas:[{de,ate,valor}]}
+//   FRACAO     arred. p/ cima(peso / fracao) x valor       regra: {fracaoKg, valor, franquia, valorFranquia}
+//   FAIXA_PESO peso x R$/kg da faixa                        regra: {faixas:[{de,ate,valor,franquia,valorFranquia}]}
 //   FAIXA_M3   m3 x valor da faixa de m3                   regra: {faixas:[{de,ate,valor}]}
 //   null       regra ainda nao definida (nao entra no calculo)
-// Todos aceitam tambem {minimo, franquia}:
-//   franquia (kg): se o peso for ate a franquia, o item vale o preco minimo;
-//   minimo (R$): o item nunca fica abaixo dele.
+// Franquia (so onde a base e kg): ate `franquia` kg cobra `valorFranquia`;
+//   acima, valorFranquia + excedente (peso - franquia) cobrado pela regra
+//   (FAIXA_PESO: excedente x R$/kg da faixa; FRACAO: arred. p/ cima(excedente / fracao) x valor).
+//   Ex.: faixa 0 a 3000, franquia 10 kg = R$ 200, excedente R$ 0,50/kg:
+//   100 kg -> 200 + (100 - 10) x 0,50 = R$ 245.
+// Todos aceitam {minimo}: o item nunca fica abaixo do preco minimo.
 const TAB_COMPOSICAO = [
   ['FRETE_COLETA', 'Frete Coleta', 'FAIXA_PESO'],
   ['FRETE_ENTREGA', 'Frete Entrega', 'FAIXA_PESO'],
@@ -24,7 +27,7 @@ const TAB_COMPOSICAO = [
   ['ADVALOREM', 'Advalorem', 'PCT_NF'],
   ['GRIS', 'GRIS', 'PCT_NF'],
   ['DESPACHO', 'Despacho', 'FIXO'],
-  ['PEDAGIO', 'Pedágio', null],
+  ['PEDAGIO', 'Pedágio', 'FRACAO'],
   ['PERCENTUAL_CTE', 'Percentual sobre CT-e', 'PCT_CTE'],
   ['PEDAGIO_FRACAO', 'Pedágio por Fração', 'FRACAO'],
   ['TAXA_TRT', 'Taxa TRT', 'FIXO'],
@@ -178,6 +181,18 @@ function freteCalcular(tabela, entrada, aliquotasIcms) {
           avisos.push(`${rotulo}: informe a fração em kg na tabela.`);
           break;
         }
+        if (r.franquia > 0) {
+          if (peso <= r.franquia) {
+            valor = r.valorFranquia || 0;
+            conta = `${freteFmtNum(peso)} kg dentro da franquia (até ${freteFmtNum(r.franquia)} kg) = R$ ${freteFmt(r.valorFranquia)}`;
+          } else {
+            const exc = peso - r.franquia;
+            const qtd = Math.ceil(exc / r.fracaoKg);
+            valor = (r.valorFranquia || 0) + qtd * (r.valor || 0);
+            conta = `franquia ${freteFmtNum(r.franquia)} kg = R$ ${freteFmt(r.valorFranquia)} + excedente ${freteFmtNum(exc)} kg ÷ ${freteFmtNum(r.fracaoKg)} kg = ${qtd} fração(ões) × R$ ${freteFmt(r.valor)}`;
+          }
+          break;
+        }
         const qtd = Math.ceil(peso / r.fracaoKg);
         valor = qtd * (r.valor || 0);
         conta = `${freteFmtNum(peso)} kg ÷ ${freteFmtNum(r.fracaoKg)} kg = ${qtd} fração(ões) × R$ ${freteFmt(r.valor)}`;
@@ -194,17 +209,26 @@ function freteCalcular(tabela, entrada, aliquotasIcms) {
           avisos.push(`${rotulo}: ${freteFmtNum(x)} ${un} não cai em nenhuma faixa da tabela.`);
           break;
         }
-        valor = x * (f.valor || 0);
         const ate = f.ate === null || f.ate === undefined ? 'acima' : freteFmtNum(f.ate);
-        conta = `${freteFmtNum(x)} ${un} × R$ ${freteFmt(f.valor)} (faixa ${freteFmtNum(f.de ?? 0)} a ${ate} ${un})`;
+        const nomeFaixa = `faixa ${freteFmtNum(f.de ?? 0)} a ${ate} ${un}`;
+        if (porPeso && f.franquia > 0) {
+          if (x <= f.franquia) {
+            valor = f.valorFranquia || 0;
+            conta = `${freteFmtNum(x)} kg dentro da franquia (até ${freteFmtNum(f.franquia)} kg) = R$ ${freteFmt(f.valorFranquia)} (${nomeFaixa})`;
+          } else {
+            const exc = x - f.franquia;
+            valor = (f.valorFranquia || 0) + exc * (f.valor || 0);
+            conta = `franquia ${freteFmtNum(f.franquia)} kg = R$ ${freteFmt(f.valorFranquia)} + excedente ${freteFmtNum(exc)} kg × R$ ${freteFmt(f.valor)} (${nomeFaixa})`;
+          }
+          break;
+        }
+        valor = x * (f.valor || 0);
+        conta = `${freteFmtNum(x)} ${un} × R$ ${freteFmt(f.valor)} (${nomeFaixa})`;
         break;
       }
     }
 
-    if (r.franquia > 0 && peso <= r.franquia) {
-      valor = r.minimo || 0;
-      obs.push(`peso dentro da franquia (até ${freteFmtNum(r.franquia)} kg) → preço mínimo`);
-    } else if (r.minimo > 0 && valor < r.minimo) {
+    if (r.minimo > 0 && valor < r.minimo) {
       valor = r.minimo;
       obs.push(`abaixo do mínimo → R$ ${freteFmt(r.minimo)}`);
     }
