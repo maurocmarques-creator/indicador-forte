@@ -106,14 +106,17 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
   (dentro do OneDrive — se o git travar sem motivo, suspeitar da sincronização do OneDrive no `.git`).
 - Runner GitHub Actions próprio da Forte em `C:\actions-runner-forte` (separado do da Ansell,
   que fica em `C:\actions-runner`). Registrado, sem serviço — iniciado por `run.cmd`.
-- Tarefas no Agendador de Tarefas: **ainda não criadas** (o usuário pediu para aguardar).
-  Plano: `GithubRunner_IndicadorForte` (no logon, roda `run.cmd`) e `IndicadorForte_Atualizacao`
-  (06:20, 12:20, 18:20, 00:20 — defasado 20 min da Ansell, que usa o mesmo login do portal).
-  Confirmar com o usuário antes de mexer no Agendador.
+- Tarefas no Agendador de Tarefas (criadas em 25/09/2026): `IndicadorForte_Atualizacao` roda
+  `python pipeline_atualizar.py >> run_output.log` nesta pasta às **08:00, 14:00, 16:00 e 18:30** (a Ansell roda
+  06/12/18/23:59 com o mesmo login do portal); `GithubRunner_IndicadorForte` sobe `C:\actions-runner-forte\run.cmd`
+  no logon (botão Atualizar Agora). O aviso de horário no cabeçalho do `index.html` tem que bater com isso.
+- **Mural** (Artifact com banco, capacidades `db` + `user`): https://claude.ai/artifact/XYivj9hbyRCDPE6q7h3Gvu
+  (`MURAL_URL` no `index.html`). Coleções `mensagens_transito/<minuta>` = `{mensagens:[{id, autor_id, texto,
+  criado_em, criado_em_fmt}]}` e `meta/em_transito` = `{lista, atualizado_em}`. Sincronização: tarefa agendada do
+  Claude `sync-mural-forte` (15 min depois de cada rodada do pipeline) com o script
+  `C:\Users\Mauro Cesar Marques\sync-mural-forte\sync_mural.py` (preparar / obs = Mural → cliente_config +
+  index.html / transito = em_transito.json → Mural / commit). Diferente do script da Ansell, aceita Mural sem mensagens.
 
 ## Pendências
-- Criar o Mural da Forte (Artifact com banco compartilhado, usando o Mural da Ansell como
-  modelo, sem o código de sync direto para o GitHub, que não funciona por causa da sandbox
-  do Artifact), preencher `MURAL_URL` no `index.html` e criar a rotina de sincronização
-  Mural ↔ dashboard (modelo: `C:\Users\Mauro Cesar Marques\sync-mural-ansell\sync_mural.py`).
-- Criar as tarefas agendadas (ver acima).
+- Regras de "desconto de ICMS sobre frete peso" e "negocia tarifa" no cálculo.
+- Coluna do Advalorem no relatório do portal (hoje só estimada na Auditoria).

@@ -167,7 +167,7 @@ tr:last-child td{border-bottom:none}
       <input id="input-gh-token" type="password" placeholder="github_pat_..." autocomplete="off" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:.8rem;margin-bottom:8px;color:#1e293b">
       <button id="btn-salvar-gh-token" style="width:100%;background:var(--primary);color:#fff;border:0;border-radius:6px;padding:7px;font-size:.8rem;font-weight:600;cursor:pointer">Salvar</button>
     </div>
-    <div style="position:absolute;top:100%;right:0;white-space:nowrap;font-size:.66rem;color:var(--primary);padding:2px 4px 0">Atualização automática às 06h, 12h, 18h e 00h</div>
+    <div style="position:absolute;top:100%;right:0;white-space:nowrap;font-size:.66rem;color:var(--primary);padding:2px 4px 0">Atualização automática às 08h, 14h, 16h e 18h30</div>
   </div>
   <a class="tab" id="tab-mural" target="_blank" rel="noopener" style="text-decoration:none" title="Mural interno PortoEx — observações por minuta (abre em nova aba)">💬 Mural ↗</a>
 </div>
@@ -608,7 +608,7 @@ const COLORS = {
 
 const _MN_MAP = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 function _fmtMes(m){ const p=m.split('-'); return (_MN_MAP[p[1]]||p[1])+'/'+p[0]; }
-const MURAL_URL = '';  // preenchido quando o Mural da Forte for criado
+const MURAL_URL = 'https://claude.ai/artifact/XYivj9hbyRCDPE6q7h3Gvu';
 
 // --- ATUALIZAR AGORA (dispara o pipeline fora do horario programado) ---
 // Chama a API do GitHub (workflow_dispatch) pra acordar o executor que
