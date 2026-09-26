@@ -88,7 +88,7 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     taxas = 0,25% da NF em ~97% das minutas. A auditoria mostra isso como "Não detalhado no relatório (provável Advalorem)".
   - **Ocultos a pedido do cliente** (só `display:none`, o código continua): na aba Totais os cards Frete Total e
     % Frete/NF e o gráfico % Frete/Valor NF por Mês; a aba Totais por CX inteira.
-  - Aba **Antecipação** (`renderAntecipacao` no `index.html`, logo após Performance, mesmos filtros e mesma base
+  - Aba **Entregas Antecipadas** (`renderAntecipacao` no `index.html`, logo após Performance, mesmos filtros e mesma base
     `filteredRowsPerf`): só entregas NO PRAZO com DATA ENTREGA, separadas pelos **dias úteis** entre a entrega e o prazo
     efetivo (agendamento, senão prev. entrega): no dia do prazo / 1 / 2 / 3+ dias antes. Cards, barras por mês, rosca
     e tabela por mês. Fora da conta (avisado na nota): no prazo sem data de entrega e as marcadas no prazo por correção

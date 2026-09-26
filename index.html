@@ -155,7 +155,7 @@ tr:last-child td{border-bottom:none}
   <div class="tab active" onclick="showTab('totais')">Totais</div>
   <div class="tab" onclick="showTab('totais-cx')" style="display:none">Totais por CX</div><!-- oculta a pedido do cliente -->
   <div class="tab" onclick="showTab('performance')">Performance</div>
-  <div class="tab" onclick="showTab('antecipacao')">Antecipação</div>
+  <div class="tab" onclick="showTab('antecipacao')">Entregas Antecipadas</div>
   <div class="tab" onclick="showTab('perf-dest')">Perf. Destinatário</div>
   <div class="tab" onclick="showTab('barra-perf')">Barra Performance</div>
   <div class="tab" onclick="showTab('transito')">🚚 Em Trânsito</div>
@@ -320,7 +320,7 @@ tr:last-child td{border-bottom:none}
   <p style="font-size:.78rem;color:#64748b;margin:-8px 0 16px" id="ant-nota">Entregas no prazo, com data de entrega preenchida, separadas pela antecedência em dias úteis entre a entrega e o prazo (agendamento, se houver; senão a previsão de entrega). Sábado e domingo não contam.</p>
   <div class="charts-grid triple">
     <div class="chart-card">
-      <h3>Antecipação por Mês <span class="tag-filtro">(Prev. Entrega)</span></h3>
+      <h3>Entregas Antecipadas por Mês <span class="tag-filtro">(Prev. Entrega)</span></h3>
       <canvas id="ch-ant-mes" style="max-height:280px"></canvas>
     </div>
     <div class="chart-card">
@@ -329,7 +329,7 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
   <div class="table-card">
-    <h3>Antecipação por Mês <span class="tag-filtro">(Prev. Entrega)</span></h3>
+    <h3>Entregas Antecipadas por Mês <span class="tag-filtro">(Prev. Entrega)</span></h3>
     <table>
       <thead><tr><th>Mês</th><th>Entregas no prazo</th><th>No dia</th><th>%</th><th>1 dia antes</th><th>%</th><th>2 dias antes</th><th>%</th><th>3+ dias antes</th><th>%</th></tr></thead>
       <tbody id="tb-ant-mes"></tbody>
