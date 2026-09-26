@@ -86,6 +86,8 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     TABELA_PORTAL, PESO_CALC, M3 e as taxas TX./FRETE (`atualizar_dashboard.py`).
   - Achado: o relatório "AUDITORIA TELA 106_ANSELL" **não tem a coluna do Advalorem** — na Forte, FRETE TOTAL − soma das
     taxas = 0,25% da NF em ~97% das minutas. A auditoria mostra isso como "Não detalhado no relatório (provável Advalorem)".
+  - **Ocultos a pedido do cliente** (só `display:none`, o código continua): na aba Totais os cards Frete Total e
+    % Frete/NF e o gráfico % Frete/Valor NF por Mês; a aba Totais por CX inteira.
   - Não editar o `RAW` à mão: ele é regerado a cada rodada do pipeline.
 - `.github/workflows/atualizar-manual.yml` — workflow `workflow_dispatch` disparado pelo
   botão "Atualizar Agora"; roda `python pipeline_atualizar.py` no runner self-hosted,

@@ -153,7 +153,7 @@ tr:last-child td{border-bottom:none}
   <div class="tab" onclick="showTab('simulador')">🧮 Simulador</div>
   <div class="tab" id="tab-btn-auditoria" style="display:none" onclick="showTab('auditoria')">🔍 Auditoria</div>
   <div class="tab active" onclick="showTab('totais')">Totais</div>
-  <div class="tab" onclick="showTab('totais-cx')">Totais por CX</div>
+  <div class="tab" onclick="showTab('totais-cx')" style="display:none">Totais por CX</div><!-- oculta a pedido do cliente -->
   <div class="tab" onclick="showTab('performance')">Performance</div>
   <div class="tab" onclick="showTab('perf-dest')">Perf. Destinatário</div>
   <div class="tab" onclick="showTab('barra-perf')">Barra Performance</div>
@@ -227,11 +227,12 @@ tr:last-child td{border-bottom:none}
 
 <!-- TAB: TOTAIS -->
 <div id="tab-totais" class="content active">
-  <div class="kpi-row">
+  <!-- Forte: Frete Total, % Frete/NF e % Frete/Valor NF por Mes ocultos a pedido do cliente (so display:none) -->
+  <div class="kpi-row" style="grid-template-columns:repeat(2,1fr)">
     <div class="kpi"><label>Total Volumes <span class="tag-filtro">(Emissão)</span></label><div class="value" id="kpi-vol">-</div><div class="sub">caixas transportadas</div></div>
-    <div class="kpi"><label>Frete Total <span class="tag-filtro">(Emissão)</span></label><div class="value" id="kpi-frete" style="font-size:1.15rem">-</div><div class="sub">R$ acumulado</div></div>
+    <div class="kpi" style="display:none"><label>Frete Total <span class="tag-filtro">(Emissão)</span></label><div class="value" id="kpi-frete" style="font-size:1.15rem">-</div><div class="sub">R$ acumulado</div></div>
     <div class="kpi"><label>Valor Mercadoria <span class="tag-filtro">(Emissão)</span></label><div class="value" id="kpi-nf" style="font-size:1.15rem">-</div><div class="sub">R$ NF total</div></div>
-    <div class="kpi"><label>% Frete / NF <span class="tag-filtro">(Emissão)</span></label><div class="value" id="kpi-pct">-</div><div class="sub">custo relativo</div></div>
+    <div class="kpi" style="display:none"><label>% Frete / NF <span class="tag-filtro">(Emissão)</span></label><div class="value" id="kpi-pct">-</div><div class="sub">custo relativo</div></div>
   </div>
   <div class="charts-grid triple">
     <div class="chart-card">
@@ -243,8 +244,8 @@ tr:last-child td{border-bottom:none}
       <canvas id="ch-perf-pizza"></canvas>
     </div>
   </div>
-  <div class="charts-grid">
-    <div class="chart-card">
+  <div class="charts-grid single">
+    <div class="chart-card" style="display:none">
       <h3>% Frete / Valor NF por Mês <span class="tag-filtro">(Emissão)</span></h3>
       <canvas id="ch-pct-mes"></canvas>
     </div>
