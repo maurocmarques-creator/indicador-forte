@@ -97,6 +97,10 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     cidade (2) > trecho cadastrado (1) > estado todo (0), destino pesa 4×. O motor precisa de `freteDefinirGrupos(lista)`
     (feito por `lerGrupos()`). Não deixa excluir trecho usado por alguma tabela. "Colar lista de cidades" (`grpProcessarColagem`)
     aceita linhas, colunas do Excel, "Nome/UF", "Nome - UF", "Nome UF", vírgulas; UF padrão para linhas sem UF; lista o que não achou.
+  - **Trecho de início / Trecho de fim** (nomes na tela para origem/destino): no editor de trecho da tabela e no Simulador,
+    cada lado aceita cidade, estado (só no editor) ou trecho cadastrado — pela busca ou pela lista "ou escolha um trecho
+    cadastrado" (`cidLigarSeletorGrupo`). No Simulador, lugar = trecho cadastrado casa com o mesmo trecho na tabela ou com
+    "estado todo" se todas as cidades forem da UF (`freteLadoPontos`); o ICMS usa a UF das cidades do trecho (`freteGrupoUf`).
   - Menu **Cadastro ▾ > Cidade** (`cadastro-cidade.js`): cidades por UF no Supabase, chave genérica `cadastro_cidades`
     = `[{ibge, nome, uf}]`; carregado em 25/09/2026 com os 5.571 municípios do IBGE (API servicodados.ibge.gov.br).
     No editor de trecho e no Simulador, origem e

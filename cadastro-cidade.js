@@ -192,6 +192,27 @@ function cidAutocomplete(inputId, ufId, cidId, opts = {}) {
   };
 }
 
+// Liga um <select> com os trechos cadastrados ao campo de busca: escolher no
+// select preenche o campo com o trecho; escolher no campo atualiza o select.
+function cidLigarSeletorGrupo(selId, grpId, ac) {
+  const sel = document.getElementById(selId);
+  const grp = document.getElementById(grpId);
+  if (!sel || !grp) return;
+  const encher = () => {
+    const atual = grp.value;
+    sel.innerHTML = '<option value="">ou escolha um trecho cadastrado…</option>' +
+      [...(_freteGruposLista || [])].sort((a, b) => a.nome.localeCompare(b.nome))
+        .map(g => `<option value="${g.id}"${g.id === atual ? ' selected' : ''}>${cadEsc(g.nome)} (${g.cidades.length} cidades)</option>`).join('');
+    if (!(_freteGruposLista || []).length) sel.innerHTML = '<option value="">nenhum trecho cadastrado (Cadastro ▾ > Trecho)</option>';
+  };
+  encher();
+  sel.addEventListener('change', () => { if (sel.value) ac.definir('', '', sel.value); });
+  grp.addEventListener('change', () => { sel.value = grp.value || ''; });
+  // quando o campo e redigitado o grupo e limpo sem evento: acompanha pelo input
+  const inp = sel.parentElement.querySelector('.cid-ac input[type=text]');
+  if (inp) inp.addEventListener('input', () => { sel.value = ''; });
+}
+
 // ---------- TELA ----------
 
 function cidMsg(txt, erro) {

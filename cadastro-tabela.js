@@ -361,12 +361,14 @@ async function abrirTrecho(id, copiarDe) {
     <h3 style="margin-bottom:4px">${titulo}</h3>
     <div style="font-size:.78rem;color:#64748b;margin-bottom:12px">Tabela ${cadEsc(t.nome)} · ${freteVigTxt(t)} · cidade em branco = estado todo.</div>
     <div class="tr-form">
-      <div><label class="tf-lbl">Origem *</label>
-        <div class="cid-ac tr-ac"><input id="tr-orig" type="text" autocomplete="off" placeholder="Digite a cidade ou o estado de origem..."><div class="cid-ac-lista" hidden></div>
-          <select id="tr-ouf" hidden>${ufOpts('')}</select><input id="tr-ocid" type="hidden"><input id="tr-ogrp" type="hidden"></div></div>
-      <div><label class="tf-lbl">Destino *</label>
-        <div class="cid-ac tr-ac"><input id="tr-dest" type="text" autocomplete="off" placeholder="Digite a cidade ou o estado de destino..."><div class="cid-ac-lista" hidden></div>
-          <select id="tr-duf" hidden>${ufOpts('')}</select><input id="tr-dcid" type="hidden"><input id="tr-dgrp" type="hidden"></div></div>
+      <div><label class="tf-lbl">Trecho de início (origem) *</label>
+        <div class="cid-ac tr-ac"><input id="tr-orig" type="text" autocomplete="off" placeholder="Cidade, estado ou trecho cadastrado..."><div class="cid-ac-lista" hidden></div>
+          <select id="tr-ouf" hidden>${ufOpts('')}</select><input id="tr-ocid" type="hidden"><input id="tr-ogrp" type="hidden"></div>
+        <select id="tr-ogrp-sel" class="tr-grp-sel" title="Escolher um trecho cadastrado"><option value="">ou escolha um trecho cadastrado…</option></select></div>
+      <div><label class="tf-lbl">Trecho de fim (destino) *</label>
+        <div class="cid-ac tr-ac"><input id="tr-dest" type="text" autocomplete="off" placeholder="Cidade, estado ou trecho cadastrado..."><div class="cid-ac-lista" hidden></div>
+          <select id="tr-duf" hidden>${ufOpts('')}</select><input id="tr-dcid" type="hidden"><input id="tr-dgrp" type="hidden"></div>
+        <select id="tr-dgrp-sel" class="tr-grp-sel" title="Escolher um trecho cadastrado"><option value="">ou escolha um trecho cadastrado…</option></select></div>
     </div>
     <div class="tf-lbl" style="margin-top:14px">Regras deste trecho</div>
     <div id="tf-regras" class="tf-regras"></div>
@@ -382,6 +384,8 @@ async function abrirTrecho(id, copiarDe) {
   try { await Promise.all([lerCidades(), lerGrupos()]); } catch (e) { /* sem cadastro: a busca avisa */ }
   const acO = cidAutocomplete('tr-orig', 'tr-ouf', 'tr-ocid', { estadoTodo: true, grupoId: 'tr-ogrp' });
   const acD = cidAutocomplete('tr-dest', 'tr-duf', 'tr-dcid', { estadoTodo: true, grupoId: 'tr-dgrp' });
+  cidLigarSeletorGrupo('tr-ogrp-sel', 'tr-ogrp', acO);
+  cidLigarSeletorGrupo('tr-dgrp-sel', 'tr-dgrp', acD);
   if (tr) {
     acO.definir(tr.origemUf, tr.origemCidade, tr.origemGrupoId);
     acD.definir(tr.destinoUf, tr.destinoCidade, tr.destinoGrupoId);

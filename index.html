@@ -100,6 +100,7 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .grp-cidades{display:flex;flex-wrap:wrap;gap:6px}
 .grp-chip{display:inline-flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;color:var(--primary);border-radius:999px;padding:3px 6px 3px 10px;font-size:.78rem}
 .grp-chip button{border:0;background:transparent;color:#b91c1c;cursor:pointer;font-size:.75rem;padding:0 2px}
+.tr-grp-sel{width:100%;margin-top:4px;border:1px dashed var(--border);border-radius:6px;padding:4px 8px;font-size:.76rem;color:#475569;background:#fff}
 .cad-del{background:transparent;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
 .filters{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters label{font-size:.75rem;color:var(--gray);font-weight:600}
@@ -583,12 +584,14 @@ tr:last-child td{border-bottom:none}
       <select id="sim-tabela" style="width:100%;margin-bottom:10px"></select>
       <label class="tf-lbl">Data do frete <span style="font-weight:400;color:#64748b">(usa a tabela válida nessa data)</span></label>
       <input id="sim-data" type="date" style="margin-bottom:10px">
-      <label class="tf-lbl">Origem</label>
-      <div class="cid-ac" style="margin-bottom:10px"><input id="sim-orig" type="text" autocomplete="off" placeholder="Digite a cidade de origem..."><div class="cid-ac-lista" hidden></div>
-        <select id="sim-ouf" hidden></select><input id="sim-ocid" type="hidden"></div>
-      <label class="tf-lbl">Destino</label>
-      <div class="cid-ac" style="margin-bottom:10px"><input id="sim-dest" type="text" autocomplete="off" placeholder="Digite a cidade de destino..."><div class="cid-ac-lista" hidden></div>
-        <select id="sim-duf" hidden></select><input id="sim-dcid" type="hidden"></div>
+      <div><label class="tf-lbl">Trecho de início (origem)</label>
+      <div class="cid-ac"><input id="sim-orig" type="text" autocomplete="off" placeholder="Cidade ou trecho cadastrado..."><div class="cid-ac-lista" hidden></div>
+        <select id="sim-ouf" hidden></select><input id="sim-ocid" type="hidden"><input id="sim-ogrp" type="hidden"></div>
+      <select id="sim-ogrp-sel" class="tr-grp-sel" style="margin-bottom:10px"></select></div>
+      <div><label class="tf-lbl">Trecho de fim (destino)</label>
+      <div class="cid-ac"><input id="sim-dest" type="text" autocomplete="off" placeholder="Cidade ou trecho cadastrado..."><div class="cid-ac-lista" hidden></div>
+        <select id="sim-duf" hidden></select><input id="sim-dcid" type="hidden"><input id="sim-dgrp" type="hidden"></div>
+      <select id="sim-dgrp-sel" class="tr-grp-sel" style="margin-bottom:10px"></select></div>
       <div class="tf-campos sim-num">
         <label>Peso real (kg)<input id="sim-peso" type="text" inputmode="decimal"></label>
         <label>Cubagem (m³)<input id="sim-m3" type="text" inputmode="decimal"></label>
@@ -701,7 +704,7 @@ const COLORS = {
 const _MN_MAP = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 function _fmtMes(m){ const p=m.split('-'); return (_MN_MAP[p[1]]||p[1])+'/'+p[0]; }
 // Data/hora da ultima publicacao de codigo (atualizar a cada push que mexe na tela, junto com o ?v= dos scripts).
-const SITE_VERSAO = '26/09/2026 00:05';
+const SITE_VERSAO = '26/09/2026 00:09';
 const MURAL_URL = 'https://claude.ai/artifact/XYivj9hbyRCDPE6q7h3Gvu';
 
 // --- ATUALIZAR AGORA (dispara o pipeline fora do horario programado) ---
@@ -2425,12 +2428,12 @@ async function excluirServico(id) {
 // Start
 init();
 </script>
-<script src="frete-calculo.js?v=202609260005"></script>
-<script src="cadastro-tabela.js?v=202609260005"></script>
-<script src="cadastro-icms.js?v=202609260005"></script>
-<script src="cadastro-cidade.js?v=202609260005"></script>
-<script src="cadastro-trecho.js?v=202609260005"></script>
-<script src="simulador.js?v=202609260005"></script>
-<script src="auditoria.js?v=202609260005"></script>
+<script src="frete-calculo.js?v=202609260009"></script>
+<script src="cadastro-tabela.js?v=202609260009"></script>
+<script src="cadastro-icms.js?v=202609260009"></script>
+<script src="cadastro-cidade.js?v=202609260009"></script>
+<script src="cadastro-trecho.js?v=202609260009"></script>
+<script src="simulador.js?v=202609260009"></script>
+<script src="auditoria.js?v=202609260009"></script>
 </body>
 </html>

@@ -88,6 +88,14 @@ function freteDefinirGrupos(lista) {
 // 0 = estado todo, 1 = trecho cadastrado (grupo), 2 = cidade.
 function freteLadoPontos(tr, lado, lugar) {
   const gid = tr[lado + 'GrupoId'];
+  // Lugar informado como trecho cadastrado (Simulador: "trecho de inicio/fim"):
+  // casa com o mesmo trecho cadastrado, ou com "estado todo" se todas as
+  // cidades do trecho forem dessa UF; nunca com uma cidade especifica.
+  if (lugar.grupoId) {
+    if (gid) return gid === lugar.grupoId ? 1 : -1;
+    if (tr[lado + 'Cidade']) return -1;
+    return freteGrupoUf(lugar.grupoId) === freteNorm(tr[lado + 'Uf']) ? 0 : -1;
+  }
   if (gid) {
     const g = _freteGrupos[gid];
     if (!g) return -1;
@@ -109,6 +117,13 @@ function freteTrechoPontos(tr, origem, destino) {
   const d = freteLadoPontos(tr, 'destino', destino);
   if (d < 0) return -1;
   return o + d * 4;
+}
+
+// UF de um trecho cadastrado quando todas as cidades sao do mesmo estado ('' se misturado).
+function freteGrupoUf(grupoId) {
+  const g = _freteGrupos[grupoId];
+  const ufs = g ? [...new Set(g.cidades.map(c => c.uf))] : [];
+  return ufs.length === 1 ? ufs[0] : '';
 }
 
 // Texto de um lado do trecho: "Itajaí/SC", "SP (estado todo)" ou "Trecho SC_Capital".

@@ -42,12 +42,28 @@ async function carregarSimulador() {
   if (!data.value) data.value = new Date().toISOString().slice(0, 10);
   if (!_simLigado) {
     _simLigado = true;
-    _simOrig = cidAutocomplete('sim-orig', 'sim-ouf', 'sim-ocid');
-    _simDest = cidAutocomplete('sim-dest', 'sim-duf', 'sim-dcid');
+    _simOrig = cidAutocomplete('sim-orig', 'sim-ouf', 'sim-ocid', { grupoId: 'sim-ogrp' });
+    _simDest = cidAutocomplete('sim-dest', 'sim-duf', 'sim-dcid', { grupoId: 'sim-dgrp' });
+    cidLigarSeletorGrupo('sim-ogrp-sel', 'sim-ogrp', _simOrig);
+    cidLigarSeletorGrupo('sim-dgrp-sel', 'sim-dgrp', _simDest);
+  } else {
+    // a lista de trechos cadastrados pode ter mudado: refaz as opcoes
+    simRecarregarGrupos();
   }
   simAtualizarTabelas();
   await cadPodeEditar();
   carregarSimSalvas();
+}
+
+function simRecarregarGrupos() {
+  for (const [selId, grpId] of [['sim-ogrp-sel', 'sim-ogrp'], ['sim-dgrp-sel', 'sim-dgrp']]) {
+    const sel = document.getElementById(selId);
+    const atual = document.getElementById(grpId).value;
+    sel.innerHTML = (_freteGruposLista || []).length
+      ? '<option value="">ou escolha um trecho cadastrado…</option>' + [...(_freteGruposLista || [])].sort((a, b) => a.nome.localeCompare(b.nome))
+          .map(g => `<option value="${g.id}"${g.id === atual ? ' selected' : ''}>${cadEsc(g.nome)} (${g.cidades.length} cidades)</option>`).join('')
+      : '<option value="">nenhum trecho cadastrado (Cadastro ▾ > Trecho)</option>';
+  }
 }
 
 // Lista de tabelas do servico escolhido (para escolher uma na mao).
@@ -75,19 +91,28 @@ function simPesosTxt(p) {
 function simular() {
   const v = id => document.getElementById(id).value;
   const servicoId = v('sim-servico');
-  const origem = { uf: v('sim-ouf'), cidade: v('sim-ocid') };
-  const destino = { uf: v('sim-duf'), cidade: v('sim-dcid') };
+  const origem = { uf: v('sim-ouf'), cidade: v('sim-ocid'), grupoId: v('sim-ogrp') };
+  const destino = { uf: v('sim-duf'), cidade: v('sim-dcid'), grupoId: v('sim-dgrp') };
+  // Trecho cadastrado: a UF (para o ICMS) vem das cidades do trecho
+  const avisosLugar = [];
+  for (const [lug, rot] of [[origem, 'início'], [destino, 'fim']]) {
+    if (!lug.grupoId) continue;
+    const g = _freteGrupos[lug.grupoId];
+    lug.uf = freteGrupoUf(lug.grupoId) || (g && g.cidades[0] ? g.cidades[0].uf : '');
+    lug.cidade = '';
+    if (!freteGrupoUf(lug.grupoId)) avisosLugar.push(`O trecho de ${rot} "${g ? g.nome : '?'}" tem cidades de mais de um estado — para o ICMS foi usada a UF ${lug.uf}.`);
+  }
   const entrada = {
     peso: freteNum(v('sim-peso')) || 0,
     m3: freteNum(v('sim-m3')) || 0,
     valorNF: freteNum(v('sim-nf')) || 0,
     valorCte: freteNum(v('sim-cte')),
-    ufOrigem: v('sim-ouf'),
-    ufDestino: v('sim-duf'),
+    ufOrigem: origem.uf,
+    ufDestino: destino.uf,
   };
   if (!servicoId) return simerro('Escolha o serviço.');
-  if (!origem.uf || !origem.cidade) return simerro('Escolha a cidade de origem na lista (digite parte do nome e clique na sugestão).');
-  if (!destino.uf || !destino.cidade) return simerro('Escolha a cidade de destino na lista (digite parte do nome e clique na sugestão).');
+  if (!origem.grupoId && (!origem.uf || !origem.cidade)) return simerro('Escolha o trecho de início: uma cidade na lista (digite parte do nome e clique na sugestão) ou um trecho cadastrado.');
+  if (!destino.grupoId && (!destino.uf || !destino.cidade)) return simerro('Escolha o trecho de fim: uma cidade na lista (digite parte do nome e clique na sugestão) ou um trecho cadastrado.');
 
   let escolha;
   let avisoVig = '';
@@ -111,12 +136,14 @@ function simular() {
   const lugar = (uf, cid) => cid ? `${cadEsc(cid)}/${uf}` : `${uf} (estado todo)`;
   const trechoTxt = cadEsc(freteTrechoTxt(escolha.trecho));
 
-  const avisos = [...res.avisos];
+  const avisos = [...avisosLugar, ...res.avisos];
   if (avisoVig) avisos.unshift(avisoVig);
   _simUltima = {
     entrada: {
       servicoId, servicoNome: (_simServicos.find(s => s.id === servicoId) || {}).nome || '',
-      tabelaId: tabId || '', data: v('sim-data'), origem, destino,
+      tabelaId: tabId || '', data: v('sim-data'),
+      origem: { ...origem, grupoNome: origem.grupoId ? (_freteGrupos[origem.grupoId] || {}).nome || '' : '' },
+      destino: { ...destino, grupoNome: destino.grupoId ? (_freteGrupos[destino.grupoId] || {}).nome || '' : '' },
       peso: entrada.peso, m3: entrada.m3, valorNF: entrada.valorNF, valorCte: entrada.valorCte,
     },
     resultado: {
@@ -209,6 +236,10 @@ async function salvarSimulacao() {
   }
 }
 
+function simLugarTxt(p) {
+  return p.grupoId ? `Trecho ${(_freteGrupos[p.grupoId] || {}).nome || p.grupoNome || '?'}` : `${p.cidade}/${p.uf}`;
+}
+
 function simFmtDataHora(iso) {
   const d = new Date(iso);
   return isNaN(d) ? '' : d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -223,7 +254,7 @@ function simSalvasFiltradas() {
 
 function renderSimSalvas() {
   const lista = simSalvasFiltradas();
-  const lugar = p => `${cadEsc(p.cidade)}/${p.uf}`;
+  const lugar = p => p.grupoId ? `Trecho ${cadEsc((_freteGrupos[p.grupoId] || {}).nome || p.grupoNome || '?')}` : `${cadEsc(p.cidade)}/${p.uf}`;
   document.getElementById('tb-sim-salvas').innerHTML = lista.map(s => `<tr>
       <td style="white-space:nowrap">${simFmtDataHora(s.criadoEm)}<div style="font-size:.68rem;color:#64748b">${cadEsc((s.criadoPor || '').split('@')[0])}</div></td>
       <td>${cadEsc(s.descricao || '—')}</td>
@@ -254,8 +285,8 @@ async function abrirSimulacao(id) {
   document.getElementById('sim-tabela').value = _simTabelas.some(t => t.id === e.tabelaId) ? e.tabelaId : '';
   document.getElementById('sim-data').value = e.data || '';
   await lerCidades().catch(() => {});
-  _simOrig.definir(e.origem.uf, e.origem.cidade);
-  _simDest.definir(e.destino.uf, e.destino.cidade);
+  _simOrig.definir(e.origem.uf, e.origem.cidade, e.origem.grupoId);
+  _simDest.definir(e.destino.uf, e.destino.cidade, e.destino.grupoId);
   document.getElementById('sim-peso').value = br(e.peso);
   document.getElementById('sim-m3').value = br(e.m3);
   document.getElementById('sim-nf').value = br(e.valorNF);
@@ -290,7 +321,7 @@ function exportarSimSalvas() {
     return {
       'Salva em': simFmtDataHora(s.criadoEm), 'Salva por': s.criadoPor || '', Descrição: s.descricao || '',
       Serviço: e.servicoNome, Tabela: r.tabelaNome, 'Válida até': r.vigencia, 'Início vigência': r.vigenciaInicio || '', 'Data do frete': e.data, Trecho: r.trecho,
-      Origem: `${e.origem.cidade}/${e.origem.uf}`, Destino: `${e.destino.cidade}/${e.destino.uf}`,
+      Origem: simLugarTxt(e.origem), Destino: simLugarTxt(e.destino),
       'Peso real (kg)': e.peso, 'Cubagem (m³)': e.m3, 'Peso considerado (kg)': r.pesos ? r.pesos.considerado : e.peso,
       'Valor NF': e.valorNF, 'Valor CT-e informado': e.valorCte ?? '',
       ...Object.fromEntries((r.itens || []).map(i => [i.rotulo, i.valor])),
