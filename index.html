@@ -674,6 +674,8 @@ const COLORS = {
 
 const _MN_MAP = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 function _fmtMes(m){ const p=m.split('-'); return (_MN_MAP[p[1]]||p[1])+'/'+p[0]; }
+// Data/hora da ultima publicacao de codigo (atualizar a cada push que mexe na tela, junto com o ?v= dos scripts).
+const SITE_VERSAO = '25/09/2026 23:44';
 const MURAL_URL = 'https://claude.ai/artifact/XYivj9hbyRCDPE6q7h3Gvu';
 
 // --- ATUALIZAR AGORA (dispara o pipeline fora do horario programado) ---
@@ -940,8 +942,8 @@ function init() {
   const _badge = _meses.length
     ? _MNM[_meses[0].split('-')[1]] + '–' + _MNM[_meses[_meses.length-1].split('-')[1]] + ' ' + _meses[_meses.length-1].split('-')[0]
     : '';
-  const _atualizado = RAW.meta.gerado_em ? ' | Atualizado em ' + RAW.meta.gerado_em : '';
-  document.getElementById('periodo-badge').textContent = _badge + ' | ' + allRows.length.toLocaleString('pt-BR') + ' registros' + _atualizado;
+  const _atualizado = RAW.meta.gerado_em ? ' | Dados atualizados em ' + RAW.meta.gerado_em : '';
+  document.getElementById('periodo-badge').textContent = _badge + ' | ' + allRows.length.toLocaleString('pt-BR') + ' registros' + _atualizado + ' | Versão do site: ' + SITE_VERSAO;
   
   ['f-cliente', 'f-regiao', 'f-tipo', 'f-uf', 'f-ano', 'f-mes', 'f-cotacao'].forEach(id => msMontar(document.getElementById(id)));
   applyFilters();

@@ -15,6 +15,8 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
 - Qualquer push no `main` publica. **Ao alterar qualquer `.js` (frete-calculo, cadastro-*, simulador, auditoria),
   atualize o `?v=AAAAMMDDHHMM` das tags `<script>` no fim do `index.html`** — senão navegador/Cloudflare servem o .js
   antigo em cache (até ~10 min) junto com o index.html novo e a tela quebra.
+- A cada publicação de código, atualizar também `SITE_VERSAO` no `index.html` (`date "+%d/%m/%Y %H:%M"`, nunca
+  `TZ=America/Sao_Paulo`) — aparece no cabeçalho como "Versão do site"; o "Dados atualizados em" é o `gerado_em` do RAW.
 - **Pedir confirmação ao usuário antes de dar push.**
 - O pipeline automático também faz commits (`Atualizacao automatica ...`) — sempre
   `git pull` antes de começar a mexer, para evitar conflito no `index.html`.
