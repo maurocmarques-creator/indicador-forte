@@ -110,7 +110,8 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     (serviço = coluna SERVICO casada pelo nome com o Cadastro > Serviço; vigência pela emissão; origem CIDADE/UF ORIGEM;
     destino = local de entrega efetivo EFF_*; peso = PESO CALC; cubagem = METRAGEM CUBICA; mercadoria = NF VALOR;
     CT-e = FRETE TOTAL) e compara com o FRETE TOTAL. Status OK/Divergente (tolerância)/Sem tabela/Serviço não cadastrado,
-    detalhe item a item, "Abrir no Simulador" e exportação Excel. Para isso o RAW ganhou CTE, ORIG_CIDADE/UF, SERVICO,
+    detalhe item a item, "Abrir no Simulador" e exportação Excel. Linha de filtro por coluna sob o cabeçalho (`AUD_COLS`):
+    texto procura o trecho; valores aceitam número ou comparação (">100", "<0", ">=500"); cartões e Excel seguem o filtro. Para isso o RAW ganhou CTE, ORIG_CIDADE/UF, SERVICO,
     TABELA_PORTAL, PESO_CALC, M3 e as taxas TX./FRETE (`atualizar_dashboard.py`).
   - Achado: o relatório "AUDITORIA TELA 106_ANSELL" **não tem a coluna do Advalorem** — na Forte, FRETE TOTAL − soma das
     taxas = 0,25% da NF em ~97% das minutas. A auditoria mostra isso como "Não detalhado no relatório (provável Advalorem)".

@@ -103,9 +103,59 @@ function audAplicarFiltros() {
   const base = _audRes.filter(x => (!mes || x.r.MES === mes) && (!srv || x.r.SERVICO === srv) && (!uf || x.r.EFF_UF === uf) &&
     (!busca || freteNorm(`${x.r.MINUTA} ${x.r.CTE} ${x.r.NF_DOC} ${x.r.EFF_LOCAL} ${x.r.EFF_CIDADE}`).includes(busca)));
   base.forEach(x => { x.sf = audStatusFinal(x); });
-  _audFiltrado = st ? base.filter(x => x.sf === st) : base;
-  audRenderResumo(base);
+  const comColunas = audFiltrarColunas(base);   // filtros digitados sob o cabecalho da tabela
+  _audFiltrado = st ? comColunas.filter(x => x.sf === st) : comColunas;
+  audRenderResumo(comColunas);
   audRenderTabela();
+}
+
+// ---------- FILTRO POR COLUNA (linha de campos sob o cabecalho da tabela) ----------
+// Texto: procura o trecho digitado (sem acento/maiuscula). Valores: numero ou
+// comparacao (">100", "<0", ">=500", "=0"); so o numero procura no valor formatado.
+const AUD_COLS = [
+  { k: 'minuta', txt: x => `${x.r.MINUTA} ${x.r.CTE || ''}` },
+  { k: 'emissao', txt: x => tabFmtData(x.r['DATA EMISSAO']) },
+  { k: 'servico', txt: x => x.r.SERVICO },
+  { k: 'origem', txt: x => `${x.r.ORIG_CIDADE}/${x.r.ORIG_UF}` },
+  { k: 'destino', txt: x => `${x.r.EFF_CIDADE}/${x.r.EFF_UF} ${x.r.EFF_LOCAL || ''}` },
+  { k: 'nf', num: x => +x.r['NF VALOR'] || 0 },
+  { k: 'peso', num: x => +x.r.PESO_CALC || 0 },
+  { k: 'm3', num: x => +x.r.M3 || 0 },
+  { k: 'excel', num: x => x.excel },
+  { k: 'tabela', num: x => x.calc },
+  { k: 'dif', num: x => x.dif },
+  { k: 'status', txt: x => AUD_STATUS[x.sf][0] },
+];
+
+function audPassaColuna(col, x, filtro) {
+  if (col.txt) return freteNorm(col.txt(x)).includes(freteNorm(filtro));
+  const v = col.num(x);
+  const m = filtro.replace(/\s/g, '').match(/^(>=|<=|>|<|=)(-?[\d.,]+)$/);
+  if (m) {
+    const n = freteNum(m[2]);
+    if (v === null || v === undefined || n === null) return false;
+    switch (m[1]) {
+      case '>': return v > n;
+      case '<': return v < n;
+      case '>=': return v >= n;
+      case '<=': return v <= n;
+      default: return Math.abs(v - n) < 0.005;
+    }
+  }
+  if (v === null || v === undefined) return filtro.trim() === '-';
+  const f = filtro.replace(/\s/g, '');
+  return freteFmt(v).includes(f) || freteFmtNum(v).includes(f) || String(v).includes(f.replace(',', '.'));
+}
+
+function audFiltrarColunas(lista) {
+  const ativos = AUD_COLS.map(c => {
+    const el = document.getElementById('aud-c-' + c.k);
+    const f = el ? el.value.trim() : '';
+    if (el) el.classList.toggle('ativo', !!f);
+    return f ? [c, f] : null;
+  }).filter(Boolean);
+  if (!ativos.length) return lista;
+  return lista.filter(x => ativos.every(([c, f]) => audPassaColuna(c, x, f)));
 }
 
 function audRenderResumo(base) {

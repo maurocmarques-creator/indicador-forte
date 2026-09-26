@@ -101,6 +101,9 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .grp-chip{display:inline-flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;color:var(--primary);border-radius:999px;padding:3px 6px 3px 10px;font-size:.78rem}
 .grp-chip button{border:0;background:transparent;color:#b91c1c;cursor:pointer;font-size:.75rem;padding:0 2px}
 .tr-grp-sel{width:100%;margin-top:4px;border:1px dashed var(--border);border-radius:6px;padding:4px 8px;font-size:.76rem;color:#475569;background:#fff}
+.aud-col-filtros th{background:#e8eef6 !important;padding:4px !important}
+.aud-col-f{width:100%;min-width:60px;border:1px solid var(--border);border-radius:5px;padding:4px 6px;font-size:.74rem;font-weight:400;color:#1e293b;background:#fff}
+.aud-col-f.ativo{border-color:var(--primary-light);background:#eff6ff}
 .cad-del{background:transparent;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
 .filters{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters label{font-size:.75rem;color:var(--gray);font-weight:600}
@@ -565,7 +568,8 @@ tr:last-child td{border-bottom:none}
     <table>
       <thead><tr><th>Minuta</th><th>Emissão</th><th>Serviço</th><th>Origem</th><th>Destino</th><th style="text-align:right">Valor mercadoria</th>
         <th style="text-align:right">Peso (kg)</th><th style="text-align:right">Cubagem (m³)</th><th style="text-align:right">Frete Excel</th>
-        <th style="text-align:right">Frete tabela</th><th style="text-align:right">Diferença</th><th>Status</th></tr></thead>
+        <th style="text-align:right">Frete tabela</th><th style="text-align:right">Diferença</th><th>Status</th></tr>
+        <tr class="aud-col-filtros"><th><input id="aud-c-minuta" class="aud-col-f" type="text" placeholder="Minuta / CT-e" oninput="audAplicarFiltros()"></th><th><input id="aud-c-emissao" class="aud-col-f" type="text" placeholder="dd/mm" oninput="audAplicarFiltros()"></th><th><input id="aud-c-servico" class="aud-col-f" type="text" placeholder="Serviço" oninput="audAplicarFiltros()"></th><th><input id="aud-c-origem" class="aud-col-f" type="text" placeholder="Origem" oninput="audAplicarFiltros()"></th><th><input id="aud-c-destino" class="aud-col-f" type="text" placeholder="Destino" oninput="audAplicarFiltros()"></th><th><input id="aud-c-nf" class="aud-col-f" type="text" placeholder=">1000" oninput="audAplicarFiltros()"></th><th><input id="aud-c-peso" class="aud-col-f" type="text" placeholder=">100" oninput="audAplicarFiltros()"></th><th><input id="aud-c-m3" class="aud-col-f" type="text" placeholder="m³" oninput="audAplicarFiltros()"></th><th><input id="aud-c-excel" class="aud-col-f" type="text" placeholder="R$" oninput="audAplicarFiltros()"></th><th><input id="aud-c-tabela" class="aud-col-f" type="text" placeholder="R$" oninput="audAplicarFiltros()"></th><th><input id="aud-c-dif" class="aud-col-f" type="text" placeholder="<0" oninput="audAplicarFiltros()"></th><th><input id="aud-c-status" class="aud-col-f" type="text" placeholder="Status" oninput="audAplicarFiltros()"></th></tr></thead>
       <tbody id="tb-auditoria"></tbody>
     </table>
     <div id="aud-rodape" style="font-size:.75rem;color:#64748b;margin-top:8px"></div>
@@ -704,7 +708,7 @@ const COLORS = {
 const _MN_MAP = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 function _fmtMes(m){ const p=m.split('-'); return (_MN_MAP[p[1]]||p[1])+'/'+p[0]; }
 // Data/hora da ultima publicacao de codigo (atualizar a cada push que mexe na tela, junto com o ?v= dos scripts).
-const SITE_VERSAO = '26/09/2026 00:09';
+const SITE_VERSAO = '26/09/2026 00:18';
 const MURAL_URL = 'https://claude.ai/artifact/XYivj9hbyRCDPE6q7h3Gvu';
 
 // --- ATUALIZAR AGORA (dispara o pipeline fora do horario programado) ---
@@ -2428,12 +2432,12 @@ async function excluirServico(id) {
 // Start
 init();
 </script>
-<script src="frete-calculo.js?v=202609260009"></script>
-<script src="cadastro-tabela.js?v=202609260009"></script>
-<script src="cadastro-icms.js?v=202609260009"></script>
-<script src="cadastro-cidade.js?v=202609260009"></script>
-<script src="cadastro-trecho.js?v=202609260009"></script>
-<script src="simulador.js?v=202609260009"></script>
-<script src="auditoria.js?v=202609260009"></script>
+<script src="frete-calculo.js?v=202609260018"></script>
+<script src="cadastro-tabela.js?v=202609260018"></script>
+<script src="cadastro-icms.js?v=202609260018"></script>
+<script src="cadastro-cidade.js?v=202609260018"></script>
+<script src="cadastro-trecho.js?v=202609260018"></script>
+<script src="simulador.js?v=202609260018"></script>
+<script src="auditoria.js?v=202609260018"></script>
 </body>
 </html>
