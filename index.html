@@ -60,6 +60,12 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .sim-cab{font-size:.82rem;margin-bottom:10px;line-height:1.6}
 .sim-total td{font-weight:800;background:#f0f4ff;border-top:2px solid var(--primary-light)}
 .sim-aviso{margin-top:10px;padding:8px 10px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:4px;font-size:.78rem;color:#92400e}
+.icms-tab{border-collapse:collapse;font-size:.72rem}
+.icms-tab th{padding:4px 5px;text-align:center;position:sticky;left:0}
+.icms-tab td{padding:1px;text-align:center;border:1px solid var(--border);min-width:38px}
+.icms-tab td input{width:38px;border:0;text-align:center;font-size:.72rem;padding:3px 0;background:transparent}
+.icms-tab td.icms-interna{background:#e0e7ff}
+.sim-sub td{font-weight:700;color:#475569}
 .cad-del{background:transparent;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
 .filters{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters label{font-size:.75rem;color:var(--gray);font-weight:600}
@@ -126,6 +132,7 @@ tr:last-child td{border-bottom:none}
     <div class="tab-submenu">
       <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-servico')">Serviço</div>
       <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-tabela')">Tabela</div>
+      <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-icms')">ICMS</div>
     </div>
   </div>
   <div class="tab" onclick="showTab('simulador')">🧮 Simulador</div>
@@ -399,6 +406,21 @@ tr:last-child td{border-bottom:none}
   </div>
   <div class="table-card" id="cad-tabela-form" style="display:none"></div>
   <div class="table-card" id="cad-tabela-trechos" style="display:none"></div>
+</div>
+
+<!-- TAB: CADASTRO > ICMS (logica em cadastro-icms.js) -->
+<div id="tab-cad-icms" class="content">
+  <div class="table-card">
+    <h3 style="margin-bottom:6px">Cadastro — ICMS (alíquota rodoviária por UF de origem × destino)</h3>
+    <div style="font-size:.76rem;color:#64748b;margin-bottom:10px">Usada quando a tabela tem "Soma imposto (ICMS) ao frete" = SIM: frete com ICMS = soma dos itens ÷ (1 − alíquota).</div>
+    <div id="cad-icms-acoes" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <label class="cad-btn" style="background:var(--primary-light)">📥 Importar planilha (.xlsx)
+        <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarIcms(this)"></label>
+      <button class="cad-btn" type="button" onclick="salvarIcms()">💾 Salvar</button>
+    </div>
+    <div id="cad-icms-msg" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
+    <div id="cad-icms-matriz" style="overflow-x:auto"></div>
+  </div>
 </div>
 
 <!-- TAB: SIMULADOR (logica em simulador.js) -->
@@ -1943,6 +1965,7 @@ function showTab(id) {
   if (id === 'cad-servico') carregarServicos();
   if (id === 'cad-tabela') carregarTabelas();
   if (id === 'simulador') carregarSimulador();
+  if (id === 'cad-icms') carregarIcms();
   if (id === 'mapa') renderMapa();
   if (id === 'transito') renderTransito();
 }
@@ -2082,6 +2105,7 @@ init();
 </script>
 <script src="frete-calculo.js"></script>
 <script src="cadastro-tabela.js"></script>
+<script src="cadastro-icms.js"></script>
 <script src="simulador.js"></script>
 </body>
 </html>

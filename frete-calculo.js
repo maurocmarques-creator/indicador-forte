@@ -118,9 +118,12 @@ function freteFaixa(faixas, x) {
   return (faixas || []).find(f => x >= (f.de ?? 0) && (f.ate === null || f.ate === undefined || x <= f.ate)) || null;
 }
 
-// entrada: {peso (kg), m3, valorNF, valorCte (opcional)}
-// Retorna {itens:[{item, rotulo, valor, conta, obs:[]}], total, avisos:[]}
-function freteCalcular(tabela, entrada) {
+// entrada: {peso (kg), m3, valorNF, valorCte (opcional), ufOrigem, ufDestino}
+// aliquotasIcms: {'SC-SP': 12, ...} (Cadastro > ICMS) — usado se a tabela
+//   tiver "Soma ICMS ao frete" = SIM: total = subtotal / (1 - aliquota/100).
+// Retorna {itens:[{item, rotulo, valor, conta, obs:[]}], subtotal,
+//   icms: null | {aliquota, valor, conta}, total, avisos:[]}
+function freteCalcular(tabela, entrada, aliquotasIcms) {
   const dec = Number.isInteger(tabela.precisao) ? tabela.precisao : 2;
   const arred = v => Math.round(v * 10 ** dec) / 10 ** dec;
   const peso = +entrada.peso || 0;
@@ -211,5 +214,23 @@ function freteCalcular(tabela, entrada) {
     itens.push({ item: k, rotulo, valor, conta, obs });
   }
 
-  return { itens, total: arred(subtotal), avisos };
+  subtotal = arred(subtotal);
+  let icms = null;
+  let total = subtotal;
+  if (tabela.somaIcms) {
+    const chave = `${freteNorm(entrada.ufOrigem)}-${freteNorm(entrada.ufDestino)}`;
+    const aliq = (aliquotasIcms || {})[chave];
+    if (aliq === undefined || aliq === null) {
+      avisos.push(`ICMS: sem alíquota cadastrada para ${chave} (Cadastro > ICMS) — total sem ICMS.`);
+    } else {
+      total = arred(subtotal / (1 - aliq / 100));
+      icms = {
+        aliquota: aliq,
+        valor: arred(total - subtotal),
+        conta: `R$ ${freteFmt(subtotal, dec)} ÷ (1 − ${freteFmtNum(aliq)}%) = R$ ${freteFmt(total, dec)} (${chave})`,
+      };
+    }
+  }
+
+  return { itens, subtotal, icms, total, avisos };
 }

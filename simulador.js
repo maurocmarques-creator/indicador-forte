@@ -4,12 +4,13 @@
 
 let _simTabelas = [];
 let _simServicos = [];
+let _simIcms = {};
 
 async function carregarSimulador() {
   const el = document.getElementById('sim-msg');
   el.textContent = 'Carregando tabelas...';
   try {
-    [_simTabelas, _simServicos] = await Promise.all([lerTabelas(), lerServicos()]);
+    [_simTabelas, _simServicos, _simIcms] = await Promise.all([lerTabelas(), lerServicos(), lerIcms()]);
     el.textContent = _simTabelas.length ? '' : 'Nenhuma tabela cadastrada ainda (Cadastro ▾ > Tabela).';
   } catch (e) {
     console.error(e);
@@ -58,6 +59,8 @@ function simular() {
     m3: freteNum(v('sim-m3')) || 0,
     valorNF: freteNum(v('sim-nf')) || 0,
     valorCte: freteNum(v('sim-cte')),
+    ufOrigem: v('sim-ouf'),
+    ufDestino: v('sim-duf'),
   };
   if (!servicoId) return simerro('Escolha o serviço.');
   if (!origem.uf || !destino.uf) return simerro('Escolha a UF de origem e a de destino.');
@@ -76,7 +79,7 @@ function simular() {
   }
 
   const t = escolha.tabela;
-  const res = freteCalcular(t, entrada);
+  const res = freteCalcular(t, entrada, _simIcms);
   const dec = Number.isInteger(t.precisao) ? t.precisao : 2;
   const lugar = (uf, cid) => cid ? `${cadEsc(cid)}/${uf}` : `${uf} (estado todo)`;
   const trechoTxt = escolha.trecho
@@ -84,7 +87,6 @@ function simular() {
     : '<span style="color:#b91c1c">nenhum trecho desta tabela casa com a origem/destino (calculado mesmo assim)</span>';
 
   const avisos = [...res.avisos];
-  if (t.somaIcms) avisos.push('A tabela está com "Soma ICMS ao frete" = SIM — o ICMS ainda não entra no cálculo (regra a definir).');
 
   document.getElementById('sim-resultado').innerHTML = `
     <div class="sim-cab">
@@ -99,7 +101,9 @@ function simular() {
           <td style="font-size:.78rem">${cadEsc(i.conta)}${i.obs.length ? `<div style="color:#b45309">${i.obs.map(cadEsc).join('<br>')}</div>` : ''}</td>
           <td style="text-align:right">R$ ${freteFmt(i.valor, dec)}</td>
         </tr>`).join('') || '<tr><td colspan="3" style="color:#64748b">A tabela não tem itens na composição.</td></tr>'}
-        <tr class="sim-total"><td colspan="2">Total do frete</td><td style="text-align:right">R$ ${freteFmt(res.total, dec)}</td></tr>
+        ${t.somaIcms ? `<tr class="sim-sub"><td colspan="2">Subtotal (sem ICMS)</td><td style="text-align:right">R$ ${freteFmt(res.subtotal, dec)}</td></tr>` : ''}
+        ${res.icms ? `<tr><td><b>ICMS ${freteFmtNum(res.icms.aliquota)}%</b></td><td style="font-size:.78rem">${cadEsc(res.icms.conta)}</td><td style="text-align:right">R$ ${freteFmt(res.icms.valor, dec)}</td></tr>` : ''}
+        <tr class="sim-total"><td colspan="2">Total do frete${res.icms ? ' (com ICMS)' : ''}</td><td style="text-align:right">R$ ${freteFmt(res.total, dec)}</td></tr>
       </tbody>
     </table>
     ${avisos.length ? `<div class="sim-aviso">${avisos.map(cadEsc).join('<br>')}</div>` : ''}`;

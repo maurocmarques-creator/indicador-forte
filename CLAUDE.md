@@ -61,7 +61,12 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     soma dos demais itens), FIXO (TDE, TAS, TRT, Despacho, SET/CAT), FRACAO (pedágio por fração: ⌈peso÷fração⌉×valor),
     FAIXA_PESO (Frete Coleta/Entrega: peso × R$/kg da faixa), FAIXA_M3 (Taxa por m³: m³ × R$/m³ da faixa). Todos têm
     preço mínimo e franquia de peso (peso até a franquia → vale o mínimo). **A definir**: Pedágio, Peso por Fração,
-    Taxa por NF (entram como R$ 0 com aviso) e o uso das opções SIM/NÃO (ex.: soma ICMS) no cálculo.
+    Taxa por NF (entram como R$ 0 com aviso) e o uso das demais opções SIM/NÃO no cálculo.
+    **ICMS**: se a tabela tem "Soma ICMS ao frete" = SIM, total = soma dos itens ÷ (1 − alíquota UF origem→destino).
+  - Menu **Cadastro ▾ > ICMS** (aba `tab-cad-icms`, `cadastro-icms.js`): matriz UF origem × destino com a alíquota
+    rodoviária; Supabase `app_config`, chave genérica `cadastro_icms` = `{aliquotas: {'SC-SP': 12, ...}}`. Botão importa
+    planilha com colunas UF ORIGEM / UF DESTINO / ALIQUOTA (formato do Brudam). Carregada em 25/09/2026 com a
+    planilha "Regra Icms.xlsx" do usuário (729 combinações).
     Escolha da tabela (`freteAcharTabela`): mesmo serviço, vigência ≤ data, trecho que casa; vence a vigência mais
     recente, depois o trecho mais específico. Itens removidos a pedido: Redespacho, KM rodado, Faixas de peso, Volume,
     Taxa de emergência, Percentual sobre custos.
