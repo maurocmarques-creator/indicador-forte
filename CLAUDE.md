@@ -84,7 +84,10 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     recente, depois o trecho mais específico. Itens removidos a pedido: Redespacho, KM rodado, Faixas de peso, Volume,
     Taxa de emergência, Percentual sobre custos, Peso por Fração, Taxa por NF.
   - Aba **🧮 Simulador** (`simulador.js`): escolhe serviço/tabela (ou automática), data, origem, destino, peso, m³,
-    valor NF e CT-e e mostra o cálculo item a item. Só lê, não grava.
+    valor NF e CT-e e mostra o cálculo item a item. **Salvar simulação** (só CAD_EDITORES) grava entrada + resultado
+    no Supabase, chave `simulacoes_frete` (formato no topo do `simulador.js`, até 2000, mais nova primeiro); a grade
+    "Simulações salvas" abaixo tem busca, Abrir (recalcula com as tabelas de hoje e avisa se o total mudou), Excluir e
+    Exportar Excel.
   - Menu **Cadastro ▾ > Cidade** (`cadastro-cidade.js`): cidades por UF no Supabase, chave genérica `cadastro_cidades`
     = `[{ibge, nome, uf}]`; carregado em 25/09/2026 com os 5.571 municípios do IBGE (API servicodados.ibge.gov.br).
     No editor de trecho e no Simulador, origem e

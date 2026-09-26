@@ -90,6 +90,8 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .cid-ac-item .uf{color:#64748b;font-weight:700;font-size:.74rem}
 .cid-ac-item.ativo,.cid-ac-item:hover{background:#eff6ff}
 .cid-ac-vazio{padding:8px 10px;font-size:.78rem;color:#64748b}
+.sim-salvar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.sim-salvar input{flex:1;min-width:200px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:.84rem}
 .cad-del{background:transparent;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
 .filters{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters label{font-size:.75rem;color:var(--gray);font-weight:600}
@@ -571,6 +573,21 @@ tr:last-child td{border-bottom:none}
       <button class="cad-btn" type="button" onclick="simular()" style="width:100%">Calcular</button>
     </div>
     <div class="table-card" id="sim-resultado"><div style="color:#64748b;font-size:.85rem">Preencha ao lado e clique em Calcular.</div></div>
+  </div>
+  <div class="table-card" style="margin-top:16px;overflow-x:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <h3 style="margin:0">Simulações salvas</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input id="sim-salvas-busca" type="text" placeholder="🔍 Buscar descrição, cidade, serviço..." oninput="renderSimSalvas()" style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:.8rem;min-width:240px">
+        <button class="cad-btn" type="button" style="background:var(--green)" onclick="exportarSimSalvas()">📥 Exportar Excel</button>
+      </div>
+    </div>
+    <div id="sim-salvas-msg" style="font-size:.76rem;color:#64748b;margin-bottom:6px"></div>
+    <table>
+      <thead><tr><th>Salva em</th><th>Descrição</th><th>Serviço / Tabela</th><th>Origem → Destino</th><th style="text-align:right">Peso real (kg)</th>
+        <th style="text-align:right">Cubagem (m³)</th><th style="text-align:right">Peso consid. (kg)</th><th style="text-align:right">Valor NF</th><th style="text-align:right">Total</th><th></th></tr></thead>
+      <tbody id="tb-sim-salvas"></tbody>
+    </table>
   </div>
 </div>
 
@@ -2265,12 +2282,14 @@ let _servicos = [];
 // Supabase continua no codigo da pagina.
 const CAD_EDITORES = ['mauro.cesar@portoex.com.br', 'brenda.elicia@portoex.com.br'];
 let _cadPodeEditar = null;
+let _cadEmail = '';
 async function cadPodeEditar() {
   if (_cadPodeEditar !== null) return _cadPodeEditar;
   try {
     const r = await fetch('/cdn-cgi/access/get-identity', { credentials: 'same-origin' });
     const id = r.ok ? await r.json() : {};
-    _cadPodeEditar = CAD_EDITORES.includes(String(id.email || '').toLowerCase());
+    _cadEmail = String(id.email || '').toLowerCase();
+    _cadPodeEditar = CAD_EDITORES.includes(_cadEmail);
   } catch (e) {
     _cadPodeEditar = false;
   }
@@ -2377,11 +2396,11 @@ async function excluirServico(id) {
 // Start
 init();
 </script>
-<script src="frete-calculo.js?v=202609252331"></script>
-<script src="cadastro-tabela.js?v=202609252331"></script>
-<script src="cadastro-icms.js?v=202609252331"></script>
-<script src="cadastro-cidade.js?v=202609252331"></script>
-<script src="simulador.js?v=202609252331"></script>
-<script src="auditoria.js?v=202609252331"></script>
+<script src="frete-calculo.js?v=202609252337"></script>
+<script src="cadastro-tabela.js?v=202609252337"></script>
+<script src="cadastro-icms.js?v=202609252337"></script>
+<script src="cadastro-cidade.js?v=202609252337"></script>
+<script src="simulador.js?v=202609252337"></script>
+<script src="auditoria.js?v=202609252337"></script>
 </body>
 </html>
