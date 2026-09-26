@@ -93,6 +93,10 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .sim-salvar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .sim-salvar input{flex:1;min-width:200px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:.84rem}
 .grp-add{display:flex;gap:8px;flex-wrap:wrap}
+.grp-colar-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.grp-colar{border:1px dashed var(--primary-light);border-radius:8px;padding:10px;margin-bottom:12px;background:#f8fafc}
+.grp-colar textarea{width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:.82rem;font-family:inherit;resize:vertical}
+.grp-colar select{border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:.8rem;margin-left:4px}
 .grp-cidades{display:flex;flex-wrap:wrap;gap:6px}
 .grp-chip{display:inline-flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;color:var(--primary);border-radius:999px;padding:3px 6px 3px 10px;font-size:.78rem}
 .grp-chip button{border:0;background:transparent;color:#b91c1c;cursor:pointer;font-size:.75rem;padding:0 2px}
@@ -697,7 +701,7 @@ const COLORS = {
 const _MN_MAP = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 function _fmtMes(m){ const p=m.split('-'); return (_MN_MAP[p[1]]||p[1])+'/'+p[0]; }
 // Data/hora da ultima publicacao de codigo (atualizar a cada push que mexe na tela, junto com o ?v= dos scripts).
-const SITE_VERSAO = '26/09/2026 00:01';
+const SITE_VERSAO = '26/09/2026 00:05';
 const MURAL_URL = 'https://claude.ai/artifact/XYivj9hbyRCDPE6q7h3Gvu';
 
 // --- ATUALIZAR AGORA (dispara o pipeline fora do horario programado) ---
@@ -2421,12 +2425,12 @@ async function excluirServico(id) {
 // Start
 init();
 </script>
-<script src="frete-calculo.js?v=202609252359"></script>
-<script src="cadastro-tabela.js?v=202609252359"></script>
-<script src="cadastro-icms.js?v=202609252359"></script>
-<script src="cadastro-cidade.js?v=202609252359"></script>
-<script src="cadastro-trecho.js?v=202609252359"></script>
-<script src="simulador.js?v=202609252359"></script>
-<script src="auditoria.js?v=202609252359"></script>
+<script src="frete-calculo.js?v=202609260005"></script>
+<script src="cadastro-tabela.js?v=202609260005"></script>
+<script src="cadastro-icms.js?v=202609260005"></script>
+<script src="cadastro-cidade.js?v=202609260005"></script>
+<script src="cadastro-trecho.js?v=202609260005"></script>
+<script src="simulador.js?v=202609260005"></script>
+<script src="auditoria.js?v=202609260005"></script>
 </body>
 </html>

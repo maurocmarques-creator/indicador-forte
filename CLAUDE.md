@@ -95,7 +95,8 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     Supabase chave genérica `cadastro_trechos` = `[{id, nome, cidades:[{uf, nome}]}]`. Podem ser origem/destino de um trecho
     de tabela (`origemGrupoId`/`destinoGrupoId`, escolhidos na mesma busca Cidade/UF). Casamento (`freteLadoPontos`):
     cidade (2) > trecho cadastrado (1) > estado todo (0), destino pesa 4×. O motor precisa de `freteDefinirGrupos(lista)`
-    (feito por `lerGrupos()`). Não deixa excluir trecho usado por alguma tabela.
+    (feito por `lerGrupos()`). Não deixa excluir trecho usado por alguma tabela. "Colar lista de cidades" (`grpProcessarColagem`)
+    aceita linhas, colunas do Excel, "Nome/UF", "Nome - UF", "Nome UF", vírgulas; UF padrão para linhas sem UF; lista o que não achou.
   - Menu **Cadastro ▾ > Cidade** (`cadastro-cidade.js`): cidades por UF no Supabase, chave genérica `cadastro_cidades`
     = `[{ibge, nome, uf}]`; carregado em 25/09/2026 com os 5.571 municípios do IBGE (API servicodados.ibge.gov.br).
     No editor de trecho e no Simulador, origem e
