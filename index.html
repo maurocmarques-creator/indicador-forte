@@ -86,6 +86,15 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .filters select{border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:.8rem;color:#1e293b;background:#fff;cursor:pointer}
 .filters select:focus{outline:none;border-color:var(--primary-light)}
 .filters .filter-group{display:flex;flex-direction:column;gap:3px}
+.ms{position:relative}
+.ms-btn{border:1px solid var(--border);border-radius:6px;padding:5px 26px 5px 10px;font-size:.8rem;color:#1e293b;background:#fff;cursor:pointer;min-width:96px;max-width:220px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;font-family:inherit}
+.ms-btn::after{content:'▾';position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--gray);font-size:.75rem}
+.ms-btn.ms-ativo{border-color:var(--primary-light);background:#eff6ff;color:var(--primary);font-weight:600}
+.ms-btn:focus-visible{outline:2px solid var(--primary-light);outline-offset:1px}
+.ms-pop{position:absolute;top:calc(100% + 4px);left:0;z-index:80;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:190px;max-height:300px;overflow-y:auto;padding:4px 0}
+.ms-item{display:flex;align-items:center;gap:7px;padding:5px 12px;font-size:.8rem;color:#1e293b;cursor:pointer;white-space:nowrap}
+.ms-item:hover{background:var(--light)}
+.ms-item.ms-todos{border-bottom:1px solid var(--border);font-weight:600;margin-bottom:2px}
 .filters .reset-btn{margin-left:auto;padding:6px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer}
 .filters .reset-btn:hover{background:var(--primary-light)}
 .content{padding:20px 24px;display:none}
@@ -176,13 +185,13 @@ tr:last-child td{border-bottom:none}
 <div class="filters">
   <div class="filter-group">
     <label>Cliente</label>
-    <select id="f-cliente" onchange="applyFilters()">
+    <select id="f-cliente" multiple>
       <option value="">Todos</option>
     </select>
   </div>
   <div class="filter-group">
     <label>Região</label>
-    <select id="f-regiao" onchange="applyFilters()">
+    <select id="f-regiao" multiple>
       <option value="">Todas</option>
       <option value="Sul">Sul</option>
       <option value="Sudeste">Sudeste</option>
@@ -193,31 +202,31 @@ tr:last-child td{border-bottom:none}
   </div>
   <div class="filter-group">
     <label>Tipo Emissão</label>
-    <select id="f-tipo" onchange="applyFilters()">
+    <select id="f-tipo" multiple>
       <option value="">Todos</option>
     </select>
   </div>
   <div class="filter-group">
     <label>UF Destino</label>
-    <select id="f-uf" onchange="applyFilters()">
+    <select id="f-uf" multiple>
       <option value="">Todas</option>
     </select>
   </div>
   <div class="filter-group">
     <label>Ano</label>
-    <select id="f-ano" onchange="applyFilters()">
+    <select id="f-ano" multiple>
       <option value="">Todos</option>
     </select>
   </div>
   <div class="filter-group">
     <label>Mês</label>
-    <select id="f-mes" onchange="applyFilters()">
+    <select id="f-mes" multiple>
       <option value="">Todos</option>
     </select>
   </div>
   <div class="filter-group">
     <label>Cotação</label>
-    <select id="f-cotacao" onchange="applyFilters()">
+    <select id="f-cotacao" multiple>
       <option value="">Todos</option>
       <option value="S">Sim</option>
       <option value="N">Não</option>
@@ -906,69 +915,135 @@ function init() {
   const _atualizado = RAW.meta.gerado_em ? ' | Atualizado em ' + RAW.meta.gerado_em : '';
   document.getElementById('periodo-badge').textContent = _badge + ' | ' + allRows.length.toLocaleString('pt-BR') + ' registros' + _atualizado;
   
+  ['f-cliente', 'f-regiao', 'f-tipo', 'f-uf', 'f-ano', 'f-mes', 'f-cotacao'].forEach(id => msMontar(document.getElementById(id)));
   applyFilters();
 }
 
-function applyFilters() {
-  const cliente = document.getElementById('f-cliente').value;
-  const regiao  = document.getElementById('f-regiao').value;
-  const tipo    = document.getElementById('f-tipo').value;
-  const uf      = document.getElementById('f-uf').value;
-  const ano     = document.getElementById('f-ano').value;
-  const mes     = document.getElementById('f-mes').value;
-  const cotacao = document.getElementById('f-cotacao').value;
+// --- FILTROS COM SELECAO MULTIPLA ---
+// Cada <select multiple> dos filtros fica escondido e ganha um botao com
+// uma lista de caixinhas. Nada marcado = "Todos". Cada clique ja reaplica
+// os filtros. As <option value=""> ("Todos"/"Todas") viram o rotulo do "tudo".
+function msValores(id) {
+  return [...document.getElementById(id).options].filter(o => o.value && o.selected).map(o => o.value);
+}
 
-  // Quando ano muda: reconstruir filtro de mês mostrando só meses daquele ano
+function msFecharTodos() {
+  document.querySelectorAll('.ms-pop').forEach(p => { p.hidden = true; });
+}
+
+function msMontar(sel) {
+  const vazio = [...sel.options].find(o => !o.value);
+  const todos = vazio ? vazio.text : 'Todos';
+  if (vazio) vazio.remove();
+  const wrap = document.createElement('div');
+  wrap.className = 'ms';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ms-btn';
+  const pop = document.createElement('div');
+  pop.className = 'ms-pop';
+  pop.hidden = true;
+  sel.hidden = true;
+  sel.after(wrap);
+  wrap.append(btn, pop);
+  sel._ms = { btn, pop, todos };
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const abrir = pop.hidden;
+    msFecharTodos();
+    pop.hidden = !abrir;
+  });
+  pop.addEventListener('click', e => e.stopPropagation());
+  msRender(sel);
+}
+
+function msRender(sel) {
+  if (!sel._ms) return;
+  const { btn, pop, todos } = sel._ms;
+  const opts = [...sel.options].filter(o => o.value);
+  const marcados = opts.filter(o => o.selected);
+  btn.textContent = !marcados.length ? todos
+    : marcados.length <= 2 ? marcados.map(o => o.text).join(', ')
+    : marcados.length + ' selecionados';
+  btn.title = marcados.length ? marcados.map(o => o.text).join(', ') : todos;
+  btn.classList.toggle('ms-ativo', marcados.length > 0);
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  pop.innerHTML = `<label class="ms-item ms-todos"><input type="checkbox"${marcados.length ? '' : ' checked'}> ${esc(todos)}</label>` +
+    opts.map((o, i) => `<label class="ms-item"><input type="checkbox" data-i="${i}"${o.selected ? ' checked' : ''}> ${esc(o.text)}</label>`).join('');
+  pop.querySelector('.ms-todos input').addEventListener('change', () => {
+    opts.forEach(o => { o.selected = false; });
+    msRender(sel);
+    applyFilters();
+  });
+  pop.querySelectorAll('input[data-i]').forEach(inp => inp.addEventListener('change', () => {
+    opts[+inp.dataset.i].selected = inp.checked;
+    msRender(sel);
+    applyFilters();
+  }));
+}
+
+document.addEventListener('click', msFecharTodos);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') msFecharTodos(); });
+
+function applyFilters() {
+  // Cada filtro e uma lista (vazia = todos).
+  const clientes = new Set(msValores('f-cliente'));
+  const regioes  = new Set(msValores('f-regiao'));
+  const tipos    = new Set(msValores('f-tipo'));
+  const anos     = new Set(msValores('f-ano'));
+  const cotacoes = new Set(msValores('f-cotacao'));
+
+  // Mes: so os meses dos anos marcados (mantem os que continuam valendo)
   const fMes = document.getElementById('f-mes');
-  const currentMes = fMes.value;
-  fMes.innerHTML = '<option value="">Todos</option>';
+  const mesesMarcados = new Set(msValores('f-mes'));
+  fMes.innerHTML = '';
   const MES_NOMES_MAP = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
-  const mesesDisp = MESES_TODOS
-    .filter(m => !ano || m.startsWith(ano + '-'));
-  mesesDisp.forEach(m => {
+  MESES_TODOS.filter(m => !anos.size || anos.has(m.slice(0, 4))).forEach(m => {
     const o = document.createElement('option');
     o.value = m;
     const parts = m.split('-');
     o.text = (MES_NOMES_MAP[parts[1]] || parts[1]) + '/' + parts[0];
-    if (m === currentMes && (!ano || currentMes.startsWith(ano + '-'))) o.selected = true;
+    o.selected = mesesMarcados.has(m);
     fMes.add(o);
   });
-  const mesFinal = fMes.value; // pode ter sido resetado se não pertence ao ano
+  msRender(fMes);
+  const meses = new Set(msValores('f-mes'));
 
-  // Cascade UF por região
+  // UF: so as UFs dos clientes e regioes marcados (mantem as que continuam valendo)
   const fUf = document.getElementById('f-uf');
-  const currentUf = fUf.value;
-  fUf.innerHTML = '<option value="">Todas</option>';
-  const baseRows = cliente ? allRows.filter(r=>r.CLIENTE===cliente) : allRows;
-  const ufsAvail = regiao
-    ? [...new Set(baseRows.filter(r=>r.REGIAO===regiao).map(r=>r.EFF_UF).filter(Boolean))].sort()
-    : [...new Set(baseRows.map(r=>r.EFF_UF).filter(Boolean))].sort();
-  ufsAvail.forEach(u=>{ const o=document.createElement('option'); o.value=u; o.text=u; if(u===currentUf)o.selected=true; fUf.add(o); });
+  const ufsMarcadas = new Set(msValores('f-uf'));
+  fUf.innerHTML = '';
+  const ufsAvail = [...new Set(allRows
+    .filter(r => (!clientes.size || clientes.has(r.CLIENTE)) && (!regioes.size || regioes.has(r.REGIAO)))
+    .map(r => r.EFF_UF).filter(Boolean))].sort();
+  ufsAvail.forEach(u => { const o = document.createElement('option'); o.value = u; o.text = u; o.selected = ufsMarcadas.has(u); fUf.add(o); });
+  msRender(fUf);
+  const ufs = new Set(msValores('f-uf'));
 
   function passaFiltrosComuns(r) {
-    if (cliente && r.CLIENTE !== cliente) return false;
-    if (regiao  && r.REGIAO  !== regiao)  return false;
-    if (tipo    && r['TIPO EMISSÃO'] !== tipo) return false;
-    if (uf      && r.EFF_UF  !== uf)      return false;
-    if (cotacao && r.COTACAO !== cotacao) return false;
+    if (clientes.size && !clientes.has(r.CLIENTE)) return false;
+    if (regioes.size  && !regioes.has(r.REGIAO))  return false;
+    if (tipos.size    && !tipos.has(r['TIPO EMISSÃO'])) return false;
+    if (ufs.size      && !ufs.has(r.EFF_UF))      return false;
+    if (cotacoes.size && !cotacoes.has(r.COTACAO)) return false;
     return true;
   }
 
   // Faturamento (Totais / Totais por CX): mes = DATA EMISSAO
   filteredRows = allRows.filter(r => {
     if (!passaFiltrosComuns(r)) return false;
-    if (ano     && !r.MES.startsWith(ano + '-')) return false;
-    if (mesFinal && r['MES'] !== mesFinal) return false;
+    if (anos.size  && !anos.has(r.MES.slice(0, 4))) return false;
+    if (meses.size && !meses.has(r.MES)) return false;
     return true;
   });
 
-  // Performance (Performance, Perf. Destinatario, Barra Performance, Em
-  // Transito, Mapa, e os sub-graficos de performance da aba Totais):
-  // mes = previsao de entrega efetiva (agendamento, senao prev.entrega)
+  // Performance (Performance, Entregas Antecipadas, Perf. Destinatario,
+  // Barra Performance, Em Transito, Mapa, e os sub-graficos de performance
+  // da aba Totais): mes = previsao de entrega efetiva (agendamento, senao prev.entrega)
   filteredRowsPerf = allRows.filter(r => {
     if (!passaFiltrosComuns(r)) return false;
-    if (ano     && !r.MES_PREV.startsWith(ano + '-')) return false;
-    if (mesFinal && r['MES_PREV'] !== mesFinal) return false;
+    if (anos.size  && !anos.has(r.MES_PREV.slice(0, 4))) return false;
+    if (meses.size && !meses.has(r.MES_PREV)) return false;
     return true;
   });
 
@@ -976,13 +1051,12 @@ function applyFilters() {
 }
 
 function resetFilters() {
-  document.getElementById('f-cliente').value = '';
-  document.getElementById('f-regiao').value = '';
-  document.getElementById('f-tipo').value = '';
-  document.getElementById('f-uf').value = '';
-  document.getElementById('f-ano').value = '';
-  document.getElementById('f-mes').value = '';
-  document.getElementById('f-cotacao').value = '';
+  ['f-cliente', 'f-regiao', 'f-tipo', 'f-uf', 'f-ano', 'f-mes', 'f-cotacao'].forEach(id => {
+    const sel = document.getElementById(id);
+    [...sel.options].forEach(o => { o.selected = false; });
+    msRender(sel);
+  });
+  msFecharTodos();
   applyFilters();
 }
 
