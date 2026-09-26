@@ -78,7 +78,7 @@ function audCalcularTudo() {
     const escolha = freteAcharTabela(_audTabelas, { servicoId, data: r['DATA EMISSAO'], origem, destino });
     if (!escolha) return { ...base, status: 'SEM_TABELA' };
     const res = freteCalcular(escolha.tabela, escolha.trecho, {
-      peso: r.PESO_CALC, m3: r.M3, valorNF: r['NF VALOR'], valorCte: excel,
+      peso: r.PESO_REAL ?? r.PESO_CALC, m3: r.M3, valorNF: r['NF VALOR'], valorCte: excel,
       ufOrigem: r.ORIG_UF, ufDestino: r.EFF_UF,
     }, _audIcms);
     const dif = Math.round((res.total - excel) * 100) / 100;
@@ -172,6 +172,7 @@ function audDetalhe(i) {
     const t = x.escolha.tabela, trc = x.escolha.trecho;
     const lugar = (uf, cid) => cid ? `${cadEsc(cid)}/${uf}` : `${uf} (estado todo)`;
     calcHtml = `<div style="font-size:.74rem;color:#475569;margin-bottom:4px">Tabela <b>${cadEsc(t.nome)}</b> (vig. ${tabFmtData(t.vigencia)}) · trecho ${lugar(trc.origemUf, trc.origemCidade)} → ${lugar(trc.destinoUf, trc.destinoCidade)}</div>
+      <div style="font-size:.72rem;color:#475569;margin-bottom:4px">${simPesosTxt(x.res.pesos)} · portal: ${freteFmtNum(r.PESO_CALC)} kg</div>
       <table class="aud-mini">${x.res.itens.map(it => `<tr><td>${it.rotulo}<div style="font-size:.68rem;color:#64748b">${cadEsc(it.conta)}${it.obs.length ? ' · ' + it.obs.map(cadEsc).join(' · ') : ''}</div></td><td style="text-align:right">R$ ${freteFmt(it.valor)}</td></tr>`).join('')}
       ${x.res.icms ? `<tr><td>ICMS ${freteFmtNum(x.res.icms.aliquota)}%</td><td style="text-align:right">R$ ${freteFmt(x.res.icms.valor)}</td></tr>` : ''}
       <tr style="font-weight:800"><td>Total tabela</td><td style="text-align:right">R$ ${freteFmt(x.res.total)}</td></tr></table>
@@ -207,7 +208,7 @@ async function audAbrirSimulador(i) {
   _simOrig.definir(r.ORIG_UF, r.ORIG_CIDADE);
   _simDest.definir(r.EFF_UF, r.EFF_CIDADE);
   const br = n => String(n ?? '').replace('.', ',');
-  set('sim-peso', br(r.PESO_CALC)); set('sim-m3', br(r.M3)); set('sim-nf', br(r['NF VALOR'])); set('sim-cte', br(r['FRETE TOTAL']));
+  set('sim-peso', br(r.PESO_REAL ?? r.PESO_CALC)); set('sim-m3', br(r.M3)); set('sim-nf', br(r['NF VALOR'])); set('sim-cte', br(r['FRETE TOTAL']));
   simular();
 }
 
@@ -217,7 +218,9 @@ function audExportar() {
     return {
       Minuta: r.MINUTA, 'CT-e': r.CTE, Emissão: r['DATA EMISSAO'], Serviço: r.SERVICO, 'Tabela portal': r.TABELA_PORTAL,
       'Origem': r.ORIG_CIDADE, 'UF origem': r.ORIG_UF, 'Destino': r.EFF_CIDADE, 'UF destino': r.EFF_UF, Destinatário: r.EFF_LOCAL,
-      'Valor mercadoria': r['NF VALOR'], 'Peso calc (kg)': r.PESO_CALC, 'Cubagem (m³)': r.M3,
+      'Valor mercadoria': r['NF VALOR'], 'Peso real (kg)': r.PESO_REAL, 'Peso cubado portal (kg)': r.PESO_CUBADO,
+      'Peso calc portal (kg)': r.PESO_CALC, 'Cubagem (m³)': r.M3,
+      'Peso considerado tabela (kg)': x.res ? x.res.pesos.considerado : '',
       'Frete Excel': x.excel, 'Frete tabela': x.calc, Diferença: x.dif, Status: AUD_STATUS[x.sf][0],
       'Tabela usada': x.escolha ? x.escolha.tabela.nome : '',
       ...Object.fromEntries(AUD_EXCEL_ITENS.map(([c, rot]) => ['Excel ' + rot, +r[c] || 0])),

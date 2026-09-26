@@ -62,6 +62,10 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     próprio com as regras de todos os itens da composição e botão Duplicar. Supabase `app_config`, chave genérica
     `cadastro_tabelas` — formato no topo do `cadastro-tabela.js`. Não renomear chaves de `TAB_COMPOSICAO` já gravadas.
     Removidos a pedido: Permite desconto/acréscimo; itens Peso por Fração e Taxa por NF.
+  - **Cubagem**: cada tabela tem `fatorCubagem` (kg/m³; no portal a Forte usa 300). Peso cubado = m³ × fator; tudo que é
+    por kg (faixas de peso, franquia, fração) usa o **peso considerado** = maior entre peso real e cubado (sem fator =
+    peso real). Simulador pede peso real + cubagem e mostra os três pesos; Auditoria usa PESO REAL e METRAGEM CUBICA do
+    Excel (RAW tem PESO_REAL, PESO_CUBADO, PESO_CALC) — com fator 300 o peso considerado bate com o PESO CALC do portal.
   - `frete-calculo.js`: motor sem tela (reusar na auditoria Excel × tabela e em outros projetos). Tipos de regra:
     PCT_NF (% sobre valor da mercadoria: GRIS, Advalorem, % sobre NF), PCT_CTE (% sobre CT-e; sem CT-e informado usa a
     soma dos demais itens), FIXO (TDE, TAS, TRT, Despacho, SET/CAT), FRACAO (Pedágio e Pedágio por fração:

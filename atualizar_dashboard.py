@@ -226,6 +226,8 @@ def build_rows(df, hoje=None):
             'SERVICO': txt(r, 'SERVICO'),
             'TABELA_PORTAL': txt(r, 'TABELA'),
             'PESO_CALC': num(r, 'PESO CALC'),
+            'PESO_REAL': num(r, 'PESO REAL'),
+            'PESO_CUBADO': num(r, 'PESO CUBADO'),
             'M3': num(r, 'METRAGEM CUBICA'),
             'TX. COLETA': num(r, 'TX. COLETA'),
             'TX. ENTREGA': num(r, 'TX. ENTREGA'),

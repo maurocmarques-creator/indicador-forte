@@ -9,6 +9,7 @@
 // projetos lerem as mesmas tabelas. Formato:
 //   [{ id, nome, referencia, servicoId, servicoNome,
 //      tipo: 'VENDA'|'COMPRA', vigencia: 'AAAA-MM-DD', precisao (2..5),
+//      fatorCubagem (kg por m3; peso cubado = m3 x fator; peso considerado = maior entre real e cubado),
 //      somaIcms, descontoIcmsFretePeso, negociaTarifa (booleans),
 //      composicao: ['GRIS', ...],             // itens que a tabela usa (TAB_COMPOSICAO)
 //      trechos: [{ id, origemUf, origemCidade, destinoUf, destinoCidade,  // cidade '' = estado todo
@@ -159,11 +160,14 @@ async function abrirTabela(id) {
             </select></div>
           <div><label class="tf-lbl">Vigência *</label>
             <input id="tf-vigencia" type="date" value="${v.vigencia || ''}"></div>
+          <div><label class="tf-lbl">Cubagem (kg/m³)</label>
+            <input id="tf-cubagem" type="text" inputmode="decimal" style="width:90px" value="${tabInp(v.fatorCubagem)}" placeholder="ex.: 300"></div>
           <div><label class="tf-lbl">Precisão</label>
             <select id="tf-precisao">
               ${[2, 3, 4, 5].map(n => `<option value="${n}"${+v.precisao === n ? ' selected' : ''}>${n} decimais</option>`).join('')}
             </select></div>
         </div>
+        <div class="tf-dica" style="margin:-4px 0 8px">Peso cubado = cubagem (m³) × este fator. No cálculo vale o <b>peso considerado</b>: o maior entre o peso real e o peso cubado.</div>
         ${TAB_SIMNAO.map(([k, rot]) => `
           <div class="tf-simnao"><span>${rot}</span>${simNao(k, v[k])}</div>`).join('')}
       </div>
@@ -233,6 +237,7 @@ async function salvarTabela() {
       tipo: document.getElementById('tf-tipo').value,
       vigencia,
       precisao: +document.getElementById('tf-precisao').value,
+      fatorCubagem: freteNum(document.getElementById('tf-cubagem').value),
       ...Object.fromEntries(TAB_SIMNAO.map(([k]) => [k, document.getElementById('tf-' + k).value === '1'])),
       composicao,
       trechos: (antiga && antiga.trechos) || [],

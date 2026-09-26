@@ -20,6 +20,8 @@
 //   Ex.: faixa 0 a 3000, franquia 10 kg = R$ 200, excedente R$ 0,50/kg:
 //   100 kg -> 200 + (100 - 10) x 0,50 = R$ 245.
 // Todos aceitam {minimo}: o item nunca fica abaixo do preco minimo.
+// Peso usado em tudo que e por kg = PESO CONSIDERADO = maior entre o peso real e
+// o peso cubado (m3 x tabela.fatorCubagem, em kg/m3). Sem fator, vale o peso real.
 const TAB_COMPOSICAO = [
   ['FRETE_COLETA', 'Frete Coleta', 'FAIXA_PESO'],
   ['FRETE_ENTREGA', 'Frete Entrega', 'FAIXA_PESO'],
@@ -121,17 +123,21 @@ function freteFaixa(faixas, x) {
 
 // As regras (valores) sao de cada TRECHO: trecho.regras = {GRIS: {...}, ...};
 // a tabela so diz quais itens entram (composicao) e as opcoes gerais.
-// entrada: {peso (kg), m3, valorNF, valorCte (opcional), ufOrigem, ufDestino}
+// entrada: {peso (kg, peso REAL), m3, valorNF, valorCte (opcional), ufOrigem, ufDestino}
 // aliquotasIcms: {'SC-SP': 12, ...} (Cadastro > ICMS) — usado se a tabela
 //   tiver "Soma ICMS ao frete" = SIM: total = subtotal / (1 - aliquota/100).
 // Retorna {itens:[{item, rotulo, valor, conta, obs:[]}], subtotal,
-//   icms: null | {aliquota, valor, conta}, total, avisos:[]}
+//   icms: null | {aliquota, valor, conta}, total, avisos:[],
+//   pesos: {real, m3, fator, cubado, considerado}}
 function freteCalcular(tabela, trecho, entrada, aliquotasIcms) {
   const regras = (trecho && trecho.regras) || {};
   const dec = Number.isInteger(tabela.precisao) ? tabela.precisao : 2;
   const arred = v => Math.round(v * 10 ** dec) / 10 ** dec;
-  const peso = +entrada.peso || 0;
+  const pesoReal = +entrada.peso || 0;
   const m3 = +entrada.m3 || 0;
+  const fator = +tabela.fatorCubagem || 0;
+  const pesoCubado = fator > 0 ? Math.round(m3 * fator * 1000) / 1000 : 0;
+  const peso = Math.max(pesoReal, pesoCubado);   // peso considerado
   const nf = +entrada.valorNF || 0;
   const temCte = entrada.valorCte !== null && entrada.valorCte !== undefined && entrada.valorCte !== '';
 
@@ -257,5 +263,6 @@ function freteCalcular(tabela, trecho, entrada, aliquotasIcms) {
     }
   }
 
-  return { itens, subtotal, icms, total, avisos };
+  return { itens, subtotal, icms, total, avisos,
+    pesos: { real: pesoReal, m3, fator, cubado: pesoCubado, considerado: peso } };
 }

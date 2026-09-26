@@ -54,6 +54,12 @@ function simerro(txt) {
   document.getElementById('sim-resultado').innerHTML = `<div class="sim-aviso">${cadEsc(txt)}</div>`;
 }
 
+function simPesosTxt(p) {
+  if (!p.fator) return `Peso considerado: <b>${freteFmtNum(p.considerado)} kg</b> (peso real; a tabela não tem fator de cubagem)`;
+  return `Peso real ${freteFmtNum(p.real)} kg · peso cubado ${freteFmtNum(p.m3)} m³ × ${freteFmtNum(p.fator)} kg/m³ = ${freteFmtNum(p.cubado)} kg · ` +
+    `peso considerado: <b>${freteFmtNum(p.considerado)} kg</b> (${p.cubado > p.real ? 'cubado' : 'real'})`;
+}
+
 function simular() {
   const v = id => document.getElementById(id).value;
   const servicoId = v('sim-servico');
@@ -97,6 +103,7 @@ function simular() {
     <div class="sim-cab">
       <div><b>${cadEsc(t.nome)}</b> · vigência ${tabFmtData(t.vigencia)} ${escolha.manual ? '(escolhida na mão)' : '(automática)'}</div>
       <div>Trecho: ${trechoTxt}</div>
+      <div>${simPesosTxt(res.pesos)}</div>
     </div>
     <table>
       <thead><tr><th>Item</th><th>Cálculo</th><th style="width:130px;text-align:right">Valor</th></tr></thead>
