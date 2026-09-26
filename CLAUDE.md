@@ -90,7 +90,8 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     % Frete/NF e o gráfico % Frete/Valor NF por Mês; a aba Totais por CX inteira.
   - **Filtros globais com seleção múltipla** (Cliente, Região, Tipo Emissão, UF, Ano, Mês, Cotação): cada
     `<select multiple>` fica escondido e `msMontar`/`msRender` desenham botão + caixinhas; ler com `msValores(id)`
-    (lista vazia = todos). Cada clique já roda `applyFilters()`; UF depende de Cliente/Região e Mês depende de Ano.
+    (lista vazia = todos). Cada clique já roda `applyFilters()`, que refaz as opções de cada filtro só com os valores
+    que têm minutas dados os OUTROS filtros (`DIMS`); opção sem dados some e é desmarcada.
   - Aba **Entregas Antecipadas** (`renderAntecipacao` no `index.html`, logo após Performance, mesmos filtros e mesma base
     `filteredRowsPerf`): só entregas NO PRAZO com DATA ENTREGA, separadas pelos **dias úteis** entre a entrega e o prazo
     efetivo (agendamento, senão prev. entrega): no dia do prazo / 1 / 2 / 3+ dias antes. Cards, barras por mês, rosca

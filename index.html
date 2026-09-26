@@ -986,39 +986,46 @@ document.addEventListener('click', msFecharTodos);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') msFecharTodos(); });
 
 function applyFilters() {
-  // Cada filtro e uma lista (vazia = todos).
-  const clientes = new Set(msValores('f-cliente'));
-  const regioes  = new Set(msValores('f-regiao'));
-  const tipos    = new Set(msValores('f-tipo'));
-  const anos     = new Set(msValores('f-ano'));
-  const cotacoes = new Set(msValores('f-cotacao'));
-
-  // Mes: so os meses dos anos marcados (mantem os que continuam valendo)
-  const fMes = document.getElementById('f-mes');
-  const mesesMarcados = new Set(msValores('f-mes'));
-  fMes.innerHTML = '';
+  // Cada filtro e uma lista (vazia = todos). As opcoes de cada filtro
+  // mostram so os valores que ainda tem minutas com o que esta marcado nos
+  // OUTROS filtros; o que ficou sem dados some (e e desmarcado).
   const MES_NOMES_MAP = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
-  MESES_TODOS.filter(m => !anos.size || anos.has(m.slice(0, 4))).forEach(m => {
-    const o = document.createElement('option');
-    o.value = m;
-    const parts = m.split('-');
-    o.text = (MES_NOMES_MAP[parts[1]] || parts[1]) + '/' + parts[0];
-    o.selected = mesesMarcados.has(m);
-    fMes.add(o);
-  });
-  msRender(fMes);
-  const meses = new Set(msValores('f-mes'));
-
-  // UF: so as UFs dos clientes e regioes marcados (mantem as que continuam valendo)
-  const fUf = document.getElementById('f-uf');
-  const ufsMarcadas = new Set(msValores('f-uf'));
-  fUf.innerHTML = '';
-  const ufsAvail = [...new Set(allRows
-    .filter(r => (!clientes.size || clientes.has(r.CLIENTE)) && (!regioes.size || regioes.has(r.REGIAO)))
-    .map(r => r.EFF_UF).filter(Boolean))].sort();
-  ufsAvail.forEach(u => { const o = document.createElement('option'); o.value = u; o.text = u; o.selected = ufsMarcadas.has(u); fUf.add(o); });
-  msRender(fUf);
-  const ufs = new Set(msValores('f-uf'));
+  const DIMS = [
+    { id: 'f-cliente', vals: r => [r.CLIENTE] },
+    { id: 'f-regiao',  vals: r => [r.REGIAO], ordem: ['Sul', 'Sudeste', 'Centro-Oeste', 'Norte', 'Nordeste'] },
+    { id: 'f-tipo',    vals: r => [r['TIPO EMISSÃO']] },
+    { id: 'f-uf',      vals: r => [r.EFF_UF] },
+    // Ano/Mes valem pela emissao (Totais) ou pela previsao de entrega (Performance): a minuta entra com os dois.
+    { id: 'f-ano',     vals: r => [r.MES.slice(0, 4), r.MES_PREV.slice(0, 4)] },
+    { id: 'f-mes',     vals: r => [r.MES, r.MES_PREV], rot: m => (MES_NOMES_MAP[m.slice(5, 7)] || m.slice(5, 7)) + '/' + m.slice(0, 4) },
+    { id: 'f-cotacao', vals: r => [r.COTACAO], rot: v => v === 'S' ? 'Sim' : v === 'N' ? 'Não' : v, ordem: ['S', 'N'] },
+  ];
+  let sel = DIMS.map(d => new Set(msValores(d.id)));
+  const passaOutros = (r, pular) => DIMS.every((d, j) => j === pular || !sel[j].size || d.vals(r).some(v => sel[j].has(v)));
+  // Repete ate estabilizar: desmarcar algo que sumiu pode liberar opcoes em outro filtro.
+  for (let volta = 0; volta < 4; volta++) {
+    let mudou = false;
+    DIMS.forEach((d, i) => {
+      const disp = new Set();
+      allRows.forEach(r => { if (passaOutros(r, i)) d.vals(r).forEach(v => { if (v) disp.add(v); }); });
+      if (d.id === 'f-mes' && sel[4].size) [...disp].forEach(m => { if (!sel[4].has(m.slice(0, 4))) disp.delete(m); });
+      const lista = d.ordem ? d.ordem.filter(v => disp.has(v)).concat([...disp].filter(v => !d.ordem.includes(v)).sort()) : [...disp].sort();
+      const fSel = document.getElementById(d.id);
+      const antes = [...fSel.options].map(o => o.value).join('|');
+      const marc = new Set([...sel[i]].filter(v => disp.has(v)));
+      if (marc.size !== sel[i].size) mudou = true;
+      sel[i] = marc;
+      if (antes !== lista.join('|') || mudou) {
+        fSel.innerHTML = '';
+        lista.forEach(v => { const o = document.createElement('option'); o.value = v; o.text = d.rot ? d.rot(v) : v; o.selected = marc.has(v); fSel.add(o); });
+      } else {
+        [...fSel.options].forEach(o => { o.selected = marc.has(o.value); });
+      }
+      msRender(fSel);
+    });
+    if (!mudou) break;
+  }
+  const [clientes, regioes, tipos, ufs, anos, meses, cotacoes] = sel;
 
   function passaFiltrosComuns(r) {
     if (clientes.size && !clientes.has(r.CLIENTE)) return false;
