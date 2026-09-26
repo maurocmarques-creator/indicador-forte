@@ -203,8 +203,9 @@ async function audAbrirSimulador(i) {
   if (srv) set('sim-servico', srv.id);
   simAtualizarTabelas();
   set('sim-data', r['DATA EMISSAO']);
-  set('sim-ouf', r.ORIG_UF); set('sim-ocid', r.ORIG_CIDADE);
-  set('sim-duf', r.EFF_UF); set('sim-dcid', r.EFF_CIDADE);
+  await lerCidades().catch(() => {});
+  _simOrig.definir(r.ORIG_UF, r.ORIG_CIDADE);
+  _simDest.definir(r.EFF_UF, r.EFF_CIDADE);
   const br = n => String(n ?? '').replace('.', ',');
   set('sim-peso', br(r.PESO_CALC)); set('sim-m3', br(r.M3)); set('sim-nf', br(r['NF VALOR'])); set('sim-cte', br(r['FRETE TOTAL']));
   simular();

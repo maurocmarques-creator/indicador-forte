@@ -80,6 +80,15 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 @media (max-width:760px){.aud-det-grid{grid-template-columns:1fr}}
 .aud-mini{width:100%;font-size:.76rem;border-collapse:collapse}
 .aud-mini td{padding:3px 6px;border-bottom:1px solid var(--border);background:#fff}
+.cid-ac{position:relative}
+.cid-ac input[type=text]{width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:.84rem;background:#fff}
+.cid-ac input.cid-ok{border-color:#16a34a;background:#f0fdf4}
+.cid-ac-lista{position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:90;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);max-height:260px;overflow-y:auto}
+.cid-ac-item{padding:6px 10px;font-size:.82rem;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+.cid-ac-item b{color:var(--primary)}
+.cid-ac-item .uf{color:#64748b;font-weight:700;font-size:.74rem}
+.cid-ac-item.ativo,.cid-ac-item:hover{background:#eff6ff}
+.cid-ac-vazio{padding:8px 10px;font-size:.78rem;color:#64748b}
 .cad-del{background:transparent;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
 .filters{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters label{font-size:.75rem;color:var(--gray);font-weight:600}
@@ -546,10 +555,11 @@ tr:last-child td{border-bottom:none}
       <label class="tf-lbl">Data do frete <span style="font-weight:400;color:#64748b">(define a vigência)</span></label>
       <input id="sim-data" type="date" style="margin-bottom:10px">
       <label class="tf-lbl">Origem</label>
-      <div class="tr-par" style="margin-bottom:10px"><select id="sim-ouf"></select><input id="sim-ocid" type="text" list="sim-ocidades" placeholder="Cidade"></div>
+      <div class="cid-ac" style="margin-bottom:10px"><input id="sim-orig" type="text" autocomplete="off" placeholder="Digite a cidade de origem..."><div class="cid-ac-lista" hidden></div>
+        <select id="sim-ouf" hidden></select><input id="sim-ocid" type="hidden"></div>
       <label class="tf-lbl">Destino</label>
-      <div class="tr-par" style="margin-bottom:10px"><select id="sim-duf"></select><input id="sim-dcid" type="text" list="sim-dcidades" placeholder="Cidade"></div>
-      <datalist id="sim-ocidades"></datalist><datalist id="sim-dcidades"></datalist>
+      <div class="cid-ac" style="margin-bottom:10px"><input id="sim-dest" type="text" autocomplete="off" placeholder="Digite a cidade de destino..."><div class="cid-ac-lista" hidden></div>
+        <select id="sim-duf" hidden></select><input id="sim-dcid" type="hidden"></div>
       <div class="tf-campos sim-num">
         <label>Peso (kg)<input id="sim-peso" type="text" inputmode="decimal"></label>
         <label>M³<input id="sim-m3" type="text" inputmode="decimal"></label>

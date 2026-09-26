@@ -52,6 +52,94 @@ function cidLigarUf(selectId, datalistId) {
   lerCidades().then(encher).catch(() => {});
 }
 
+// ---------- BUSCA DE CIDADE (autocomplete Cidade/UF) ----------
+
+// Liga um campo de texto a uma lista de sugestoes Cidade/UF do cadastro.
+// So vale o que for escolhido na lista: ao escolher, grava a UF no <select>
+// ufId e o nome no campo cidId (hidden) e dispara 'change' neles; se o
+// texto for mexido depois, os dois sao limpos (evita cidade/UF errada).
+function cidAutocomplete(inputId, ufId, cidId) {
+  const inp = document.getElementById(inputId);
+  const lista = inp.parentElement.querySelector('.cid-ac-lista');
+  const ufEl = document.getElementById(ufId);
+  const cidEl = document.getElementById(cidId);
+  let itens = [];
+  let ativo = -1;
+
+  const fechar = () => { lista.hidden = true; ativo = -1; };
+  const marcarAtivo = () => lista.querySelectorAll('.cid-ac-item').forEach((el, i) => el.classList.toggle('ativo', i === ativo));
+
+  function escolher(c) {
+    ufEl.value = c.uf;
+    cidEl.value = c.nome;
+    inp.value = `${c.nome}/${c.uf}`;
+    inp.classList.add('cid-ok');
+    ufEl.dispatchEvent(new Event('change'));
+    cidEl.dispatchEvent(new Event('change'));
+    fechar();
+  }
+
+  function buscar() {
+    ufEl.value = '';
+    cidEl.value = '';
+    inp.classList.remove('cid-ok');
+    // aceita "itajai", "itajai sc" ou "itajai/sc"
+    const txt = freteNorm(inp.value).replace('/', ' ');
+    if (txt.length < 2) { fechar(); return; }
+    const m = txt.match(/^(.*?)[\s]+([A-Z]{2})$/);
+    const nomeBusca = m && FRETE_UFS.includes(m[2]) ? m[1].trim() : txt;
+    const ufBusca = m && FRETE_UFS.includes(m[2]) ? m[2] : '';
+    const todas = (_cidades || []).filter(c => !ufBusca || c.uf === ufBusca);
+    const comeca = [], contem = [];
+    for (const c of todas) {
+      const n = freteNorm(c.nome);
+      if (n.startsWith(nomeBusca)) comeca.push(c);
+      else if (n.includes(nomeBusca)) contem.push(c);
+    }
+    // nome exato primeiro, depois os mais curtos (ex.: "campinas" -> Campinas/SP antes de Campinas do Piaui)
+    const ordem = (a, b) => (freteNorm(b.nome) === nomeBusca) - (freteNorm(a.nome) === nomeBusca) ||
+      a.nome.length - b.nome.length || a.nome.localeCompare(b.nome);
+    itens = comeca.sort(ordem).concat(contem.sort(ordem)).slice(0, 15);
+    ativo = itens.length ? 0 : -1;
+    lista.innerHTML = itens.length
+      ? itens.map((c, i) => `<div class="cid-ac-item" data-i="${i}"><b>${cadEsc(c.nome)}</b><span class="uf">${c.uf}</span></div>`).join('')
+      : `<div class="cid-ac-vazio">${_cidades ? 'Nenhuma cidade encontrada.' : 'Carregando cidades...'}</div>`;
+    marcarAtivo();
+    lista.hidden = false;
+  }
+
+  inp.addEventListener('input', () => {
+    if (!_cidades) lerCidades().then(buscar).catch(() => {});
+    buscar();
+  });
+  inp.addEventListener('keydown', e => {
+    if (lista.hidden) return;
+    if (e.key === 'ArrowDown') { ativo = Math.min(ativo + 1, itens.length - 1); marcarAtivo(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { ativo = Math.max(ativo - 1, 0); marcarAtivo(); e.preventDefault(); }
+    else if (e.key === 'Enter') { if (itens[ativo]) escolher(itens[ativo]); e.preventDefault(); }
+    else if (e.key === 'Escape') fechar();
+  });
+  // mousedown (antes do blur) para o clique na sugestao valer
+  lista.addEventListener('mousedown', e => {
+    const it = e.target.closest('.cid-ac-item');
+    if (it) { e.preventDefault(); escolher(itens[+it.dataset.i]); }
+  });
+  inp.addEventListener('blur', () => setTimeout(fechar, 150));
+  lerCidades().catch(() => {});
+
+  // Para preencher por codigo (ex.: Auditoria -> Abrir no Simulador).
+  return {
+    definir(uf, nome) {
+      const c = (_cidades || []).find(x => x.uf === uf && freteNorm(x.nome) === freteNorm(nome));
+      if (c) { escolher(c); return; }
+      ufEl.value = uf || '';
+      cidEl.value = nome || '';
+      inp.value = nome ? `${nome}/${uf}` : '';
+      inp.classList.toggle('cid-ok', !!(uf && nome));
+    },
+  };
+}
+
 // ---------- TELA ----------
 
 function cidMsg(txt, erro) {

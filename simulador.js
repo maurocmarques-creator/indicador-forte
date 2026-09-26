@@ -6,6 +6,8 @@ let _simTabelas = [];
 let _simServicos = [];
 let _simIcms = {};
 let _simLigado = false;
+let _simOrig = null;
+let _simDest = null;
 
 async function carregarSimulador() {
   const el = document.getElementById('sim-msg');
@@ -31,8 +33,8 @@ async function carregarSimulador() {
   if (!data.value) data.value = new Date().toISOString().slice(0, 10);
   if (!_simLigado) {
     _simLigado = true;
-    cidLigarUf('sim-ouf', 'sim-ocidades');
-    cidLigarUf('sim-duf', 'sim-dcidades');
+    _simOrig = cidAutocomplete('sim-orig', 'sim-ouf', 'sim-ocid');
+    _simDest = cidAutocomplete('sim-dest', 'sim-duf', 'sim-dcid');
   }
   simAtualizarTabelas();
 }
@@ -66,7 +68,8 @@ function simular() {
     ufDestino: v('sim-duf'),
   };
   if (!servicoId) return simerro('Escolha o serviço.');
-  if (!origem.uf || !destino.uf) return simerro('Escolha a UF de origem e a de destino.');
+  if (!origem.uf || !origem.cidade) return simerro('Escolha a cidade de origem na lista (digite parte do nome e clique na sugestão).');
+  if (!destino.uf || !destino.cidade) return simerro('Escolha a cidade de destino na lista (digite parte do nome e clique na sugestão).');
 
   let escolha;
   const tabId = v('sim-tabela');
