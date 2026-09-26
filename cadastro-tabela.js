@@ -430,17 +430,17 @@ function tabBlocoRegra(k) {
       const cls = porPeso ? 'tf-faixa tf-faixa-kg' : 'tf-faixa';
       corpo = `<div class="tf-faixas">
           <div class="${cls.replace('tf-faixa', 'tf-faixa-cab')}"><span>De (${un})</span><span>Até (${un})</span>
-            ${porPeso ? '<span>Franquia (kg)</span><span>Valor franquia (R$)</span><span>R$/kg excedente</span>' : `<span>R$ por ${un}</span>`}<span></span></div>
+            ${porPeso ? '<span>Valor da faixa (R$)</span><span>Franquia (kg)</span><span>R$/kg excedente</span>' : `<span>R$ por ${un}</span>`}<span></span></div>
           ${faixas.map((f, i) => `
             <div class="${cls}">
               ${inp(f, 'de', '0')}${inp(f, 'ate', 'vazio = acima')}
-              ${porPeso ? inp(f, 'franquia', 'opcional') + inp(f, 'valorFranquia') : ''}${inp(f, 'valor')}
+              ${porPeso ? inp(f, 'valorFranquia') + inp(f, 'franquia', 'opcional') + inp(f, 'valor', 'opcional') : inp(f, 'valor')}
               <button type="button" class="tf-del-faixa" title="Remover faixa" onclick="tabDelFaixa('${k}',${i})">✕</button>
             </div>`).join('')}
           <button type="button" class="tf-add-faixa" onclick="tabAddFaixa('${k}')">+ faixa</button>
         </div>
         <div class="tf-dica">${porPeso
-          ? 'Sem franquia: peso × R$/kg da faixa. Com franquia: até a franquia cobra o valor dela; acima, valor da franquia + (peso − franquia) × R$/kg excedente. Ex.: franquia 10 kg = R$ 200, excedente R$ 0,50 → 100 kg = 200 + 90 × 0,50 = R$ 245'
+          ? 'Vale o peso considerado (maior entre real e cubado). Na faixa em que ele cair: sem excedente, o frete é o valor da faixa; com R$/kg excedente, é o valor da faixa + (peso − franquia) × R$/kg. Franquia vazia = fim da faixa anterior; valor da faixa vazio = valor da faixa anterior. Ex.: faixa 3.000,01 a 12.000 com excedente R$ 1,80 → 3.500 kg = 5.381,31 + 500 × 1,80'
           : 'm³ × valor da faixa em que ele cair'}</div>`;
       break;
     }
@@ -474,7 +474,7 @@ function tabAddFaixa(k) {
   // e repete a franquia da faixa anterior (geralmente e a mesma).
   const ult = r.faixas[r.faixas.length - 1];
   const de = ult && ult.ate !== null && ult.ate !== undefined ? Math.round((ult.ate + 0.01) * 100) / 100 : null;
-  r.faixas.push({ de, ate: null, franquia: ult ? ult.franquia : null, valorFranquia: null, valor: null });
+  r.faixas.push({ de, ate: null, valorFranquia: null, franquia: null, valor: null });
   tabRenderRegras();
 }
 

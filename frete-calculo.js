@@ -11,7 +11,11 @@
 //   PCT_CTE    % sobre o valor do CT-e                      regra: {pct}
 //   FIXO       valor fixo, somado se informado             regra: {valor}
 //   FRACAO     arred. p/ cima(peso / fracao) x valor       regra: {fracaoKg, valor, franquia, valorFranquia}
-//   FAIXA_PESO peso x R$/kg da faixa                        regra: {faixas:[{de,ate,valor,franquia,valorFranquia}]}
+//   FAIXA_PESO valor da faixa (+ excedente por kg)         regra: {faixas:[{de,ate,valorFranquia,franquia,valor}]}
+//              valorFranquia = VALOR DA FAIXA (R$ fixo); valor = R$/kg EXCEDENTE; franquia = kg a partir do qual
+//              cobra excedente. Sem excedente: frete = valor da faixa. Com excedente: frete = valor da faixa +
+//              (peso - franquia) x R$/kg. Franquia vazia = 'ate' da faixa anterior (ou 'de' da propria);
+//              valor da faixa vazio com excedente = valor da faixa anterior ("pega o valor ate a faixa").
 //   FAIXA_M3   m3 x valor da faixa de m3                   regra: {faixas:[{de,ate,valor}]}
 //   null       regra ainda nao definida (nao entra no calculo)
 // Franquia (so onde a base e kg): ate `franquia` kg cobra `valorFranquia`;
@@ -218,14 +222,22 @@ function freteCalcular(tabela, trecho, entrada, aliquotasIcms) {
         }
         const ate = f.ate === null || f.ate === undefined ? 'acima' : freteFmtNum(f.ate);
         const nomeFaixa = `faixa ${freteFmtNum(f.de ?? 0)} a ${ate} ${un}`;
-        if (porPeso && f.franquia > 0) {
-          if (x <= f.franquia) {
-            valor = f.valorFranquia || 0;
-            conta = `${freteFmtNum(x)} kg dentro da franquia (até ${freteFmtNum(f.franquia)} kg) = R$ ${freteFmt(f.valorFranquia)} (${nomeFaixa})`;
+        if (porPeso) {
+          const lista = r.faixas || [];
+          const ant = lista[lista.indexOf(f) - 1] || null;
+          const vazio = v => v === null || v === undefined || v === '';
+          const excKg = +f.valor || 0;                     // R$/kg excedente
+          let fixo = f.valorFranquia;                       // valor da faixa
+          if (vazio(fixo) && excKg > 0 && ant) fixo = ant.valorFranquia;
+          fixo = +fixo || 0;
+          if (excKg > 0) {
+            const franq = !vazio(f.franquia) ? +f.franquia : (ant && !vazio(ant.ate) ? +ant.ate : +(f.de || 0));
+            const exc = Math.max(0, x - franq);
+            valor = fixo + exc * excKg;
+            conta = `R$ ${freteFmt(fixo)} (até ${freteFmtNum(franq)} kg) + excedente ${freteFmtNum(exc)} kg × R$ ${freteFmt(excKg)} (${nomeFaixa})`;
           } else {
-            const exc = x - f.franquia;
-            valor = (f.valorFranquia || 0) + exc * (f.valor || 0);
-            conta = `franquia ${freteFmtNum(f.franquia)} kg = R$ ${freteFmt(f.valorFranquia)} + excedente ${freteFmtNum(exc)} kg × R$ ${freteFmt(f.valor)} (${nomeFaixa})`;
+            valor = fixo;
+            conta = `${freteFmtNum(x)} kg na ${nomeFaixa} = R$ ${freteFmt(fixo)}`;
           }
           break;
         }
