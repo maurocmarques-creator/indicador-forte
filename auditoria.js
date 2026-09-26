@@ -35,6 +35,7 @@ const AUD_STATUS = {
   DIVERGENTE: ['Divergente', '#dc2626'],
   SEM_TABELA: ['Sem tabela/trecho', '#b45309'],
   SEM_SERVICO: ['Serviço não cadastrado', '#64748b'],
+  COTACAO: ['Cotação', '#7c3aed'],
 };
 
 async function carregarAuditoria() {
@@ -92,6 +93,9 @@ function audTolerancia() {
 }
 
 function audStatusFinal(x) {
+  // Frete negociado por cotacao (fora da tabela): status proprio, fora dos
+  // divergentes e da soma das diferencas (o calculo continua no detalhe).
+  if (x.r.COTACAO === 'S') return 'COTACAO';
   if (x.status !== 'CALCULADO') return x.status;
   return Math.abs(x.dif) <= audTolerancia() ? 'OK' : 'DIVERGENTE';
 }
@@ -162,7 +166,7 @@ function audFiltrarColunas(lista) {
 
 function audRenderResumo(base) {
   const cont = k => base.filter(x => x.sf === k).length;
-  const calc = base.filter(x => x.calc !== null);
+  const calc = base.filter(x => x.calc !== null && x.sf !== 'COTACAO');
   const somaExcel = calc.reduce((s, x) => s + x.excel, 0);
   const somaCalc = calc.reduce((s, x) => s + x.calc, 0);
   const card = (rot, val, cor, st) => `<div class="aud-card" ${st ? `onclick="audFiltrarStatus('${st}')" style="cursor:pointer"` : ''}>
@@ -173,6 +177,7 @@ function audRenderResumo(base) {
     card('Divergentes', cont('DIVERGENTE').toLocaleString('pt-BR'), AUD_STATUS.DIVERGENTE[1], 'DIVERGENTE') +
     card('Sem tabela/trecho', cont('SEM_TABELA').toLocaleString('pt-BR'), AUD_STATUS.SEM_TABELA[1], 'SEM_TABELA') +
     card('Serviço não cadastrado', cont('SEM_SERVICO').toLocaleString('pt-BR'), AUD_STATUS.SEM_SERVICO[1], 'SEM_SERVICO') +
+    card('Com cotação', cont('COTACAO').toLocaleString('pt-BR'), AUD_STATUS.COTACAO[1], 'COTACAO') +
     card('Excel × tabela (calculadas)', `R$ ${freteFmt(somaExcel)}<br><span style="font-size:.75rem">tabela R$ ${freteFmt(somaCalc)} · dif. R$ ${freteFmt(somaCalc - somaExcel)}</span>`);
 }
 
@@ -201,7 +206,7 @@ function audRenderTabela() {
       <td style="text-align:right">${freteFmtNum(r.M3)}</td>
       <td style="text-align:right">R$ ${freteFmt(x.excel)}</td>
       <td style="text-align:right">${x.calc !== null ? 'R$ ' + freteFmt(x.calc) : '—'}</td>
-      <td style="text-align:right;font-weight:700;color:${x.dif === null ? '#64748b' : Math.abs(x.dif) <= audTolerancia() ? '#16a34a' : '#dc2626'}">${x.dif !== null ? freteFmt(x.dif) : '—'}</td>
+      <td style="text-align:right;font-weight:700;color:${x.dif === null || x.sf === 'COTACAO' ? '#64748b' : Math.abs(x.dif) <= audTolerancia() ? '#16a34a' : '#dc2626'}">${x.dif !== null ? freteFmt(x.dif) : '—'}</td>
       <td><span class="aud-st" style="background:${cor}1a;color:${cor}">${rot}</span></td>
     </tr>
     <tr id="aud-det-${i}" style="display:none"><td colspan="14" class="aud-det"></td></tr>`;

@@ -113,7 +113,8 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     detalhe item a item, "Abrir no Simulador" e exportação Excel. Linha de filtro por coluna sob o cabeçalho (`AUD_COLS`):
     texto procura o trecho; valores aceitam número ou comparação (">100", "<0", ">=500"); cartões e Excel seguem o filtro. Para isso o RAW ganhou CTE, ORIG_CIDADE/UF, SERVICO,
     TABELA_PORTAL, COTACAO_NUM (nº da cotação do portal), PESO_CALC, M3 e as taxas TX./FRETE (`atualizar_dashboard.py`).
-    Colunas Tabela (portal + "calc.:" tabela cadastrada usada) e Cotação (Sim · nº / Não).
+    Colunas Tabela (portal + "calc.:" tabela cadastrada usada) e Cotação (Sim · nº / Não). Minuta com cotação tem status
+    próprio "Cotação" (cartão e filtro), fora dos divergentes e da soma das diferenças (cálculo segue no detalhe).
   - Achado: o relatório "AUDITORIA TELA 106_ANSELL" **não tem a coluna do Advalorem** — na Forte, FRETE TOTAL − soma das
     taxas = 0,25% da NF em ~97% das minutas. A auditoria mostra isso como "Não detalhado no relatório (provável Advalorem)".
   - **Ocultos a pedido do cliente** (só `display:none`, o código continua): na aba Totais os cards Frete Total e
