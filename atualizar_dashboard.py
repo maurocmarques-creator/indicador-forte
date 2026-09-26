@@ -47,6 +47,10 @@ OBSERVACOES_TRANSITO = CONFIG.get("observacoes_transito", {})
 # cidade/UF de cada minuta continua a original.
 GRAFIA_DESTINATARIO = CONFIG.get("grafia_destinatario", {})
 
+# Se true, minutas de REENTREGA entram na performance (No prazo / Em atraso /
+# Em transito) pelo proprio prazo, em vez de ficarem com status REENTREGA.
+REENTREGA_CONTA_PERFORMANCE = bool(CONFIG.get("reentrega_conta_performance", False))
+
 UF_REGIAO = {
     'AC': 'Norte', 'AP': 'Norte', 'AM': 'Norte', 'PA': 'Norte', 'RO': 'Norte', 'RR': 'Norte', 'TO': 'Norte',
     'AL': 'Nordeste', 'BA': 'Nordeste', 'CE': 'Nordeste', 'MA': 'Nordeste', 'PB': 'Nordeste',
@@ -95,7 +99,10 @@ def iso(d):
 def compute_status(tipo_emissao, data_entrega, prev_entrega, data_agendamento, hoje, descricao_ultimo=''):
     if tipo_emissao == 'DEVOLUCAO':
         return 'DEVOLUCAO'
-    if tipo_emissao == 'REENTREGA':
+    # Reentrega fica fora da performance, a menos que o cliente peca para
+    # contar (cliente_config.json: "reentrega_conta_performance": true) --
+    # ai ela e avaliada pelo proprio prazo como qualquer entrega.
+    if tipo_emissao == 'REENTREGA' and not REENTREGA_CONTA_PERFORMANCE:
         return 'REENTREGA'
     efetivo = data_agendamento if not pd.isna(data_agendamento) else prev_entrega
 

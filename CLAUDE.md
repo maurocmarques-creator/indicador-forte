@@ -23,6 +23,8 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
   - `onedrive_consolidado`: onde a planilha consolidada `Base_Jan_<Mes>.xlsx` é salva
     (`OneDrive - PORTOEXPRESS LOGISTICA LTDA\Analise Forte`).
   - `email_destino`, `link_dashboard`, `nome_exibicao` (usado no assunto/remetente do e-mail).
+  - `reentrega_conta_performance: true` (só a Forte): REENTREGA entra na performance pelo próprio prazo (No prazo /
+    Em atraso / Em trânsito) em vez de ficar com status REENTREGA. DEVOLUÇÃO continua fora. Na Ansell fica ausente (false).
   - `status_overrides` / `date_overrides`: correções manuais por MINUTA (status errado, data digitada errada no portal).
   - `grafia_destinatario`: padroniza nomes de destinatário escritos de jeitos diferentes no portal
     (ex.: variações de "MRH VEICULOS" → "MRH VEICULOS LTDA"); só troca o nome, cidade/UF ficam as originais.
