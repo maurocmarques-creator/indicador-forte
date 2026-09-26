@@ -3,8 +3,12 @@
   "configurations": [
     {
       "name": "indicador-forte",
-      "runtimeExecutable": "C:\\Users\\Mauro Cesar Marques\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8935"],
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8935"
+      ],
       "port": 8935
     }
   ]
