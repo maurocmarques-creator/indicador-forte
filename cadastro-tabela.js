@@ -273,13 +273,6 @@ async function excluirTabela() {
 
 // ---------- LISTA DE TRECHOS ----------
 
-// Cidades conhecidas (destinos que aparecem nos dados do dashboard) para
-// sugerir na digitacao; qualquer cidade pode ser digitada.
-function tabCidadesConhecidas() {
-  const rows = (typeof RAW !== 'undefined' && RAW.rows) || [];
-  return [...new Set(rows.map(r => r.EFF_CIDADE).filter(Boolean))].sort();
-}
-
 function trMsg(txt, erro) {
   const el = document.getElementById('tr-msg');
   if (!el) return;
@@ -357,12 +350,12 @@ async function abrirTrecho(id, copiarDe) {
     <div class="tr-form">
       <div><label class="tf-lbl">Origem *</label>
         <div class="tr-par"><select id="tr-ouf">${ufOpts(tr ? tr.origemUf : '')}</select>
-          <input id="tr-ocid" type="text" list="tr-cidades" placeholder="Cidade (em branco = estado todo)" value="${cadEsc(tr ? tr.origemCidade : '')}"></div></div>
+          <input id="tr-ocid" type="text" list="tr-ocidades" placeholder="Cidade (em branco = estado todo)" value="${cadEsc(tr ? tr.origemCidade : '')}"></div></div>
       <div><label class="tf-lbl">Destino *</label>
         <div class="tr-par"><select id="tr-duf">${ufOpts(tr ? tr.destinoUf : '')}</select>
-          <input id="tr-dcid" type="text" list="tr-cidades" placeholder="Cidade (em branco = estado todo)" value="${cadEsc(tr ? tr.destinoCidade : '')}"></div></div>
+          <input id="tr-dcid" type="text" list="tr-dcidades" placeholder="Cidade (em branco = estado todo)" value="${cadEsc(tr ? tr.destinoCidade : '')}"></div></div>
     </div>
-    <datalist id="tr-cidades">${tabCidadesConhecidas().map(c => `<option value="${cadEsc(c)}">`).join('')}</datalist>
+    <datalist id="tr-ocidades"></datalist><datalist id="tr-dcidades"></datalist>
     <div class="tf-lbl" style="margin-top:14px">Regras deste trecho</div>
     <div id="tf-regras" class="tf-regras"></div>
     <div id="tr-msg" style="font-size:.78rem;margin:10px 0 0;min-height:1em"></div>
@@ -373,6 +366,8 @@ async function abrirTrecho(id, copiarDe) {
       ${tr ? '<button class="cad-del" type="button" style="margin-left:auto" onclick="excluirTrecho()">Excluir trecho</button>' : ''}
     </div>`;
   tabRenderRegras();
+  cidLigarUf('tr-ouf', 'tr-ocidades');
+  cidLigarUf('tr-duf', 'tr-dcidades');
   if (!podeEditar) {
     const box = document.getElementById('cad-tabela-trechos');
     box.querySelectorAll('input,select').forEach(el => { el.disabled = true; });
@@ -520,6 +515,13 @@ async function salvarTrecho() {
     destinoCidade: freteNorm(document.getElementById('tr-dcid').value),
   };
   if (!dados.origemUf || !dados.destinoUf) { trMsg('Escolha a UF de origem e a de destino.', true); return; }
+  try { await lerCidades(); } catch (e) { /* sem cadastro de cidades: nao valida */ }
+  for (const [uf, cid, lado] of [[dados.origemUf, dados.origemCidade, 'origem'], [dados.destinoUf, dados.destinoCidade, 'destino']]) {
+    if (cid && (_cidades || []).length && !cidadeExiste(uf, cid)) {
+      trMsg(`Cidade de ${lado} "${cid}" não existe em ${uf} no Cadastro > Cidade (confira a grafia ou cadastre).`, true);
+      return;
+    }
+  }
   const regras = tabRegrasParaGravar(_tabComp);
   const erro = tabValidarRegras(regras);
   if (erro) { trMsg(erro, true); return; }

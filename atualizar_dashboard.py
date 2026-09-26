@@ -70,6 +70,22 @@ UF_CENTROID = {
 }
 
 
+def num(r, col):
+    """Valor numerico de uma coluna (0.0 se vazia ou se a coluna nao existir)."""
+    v = r.get(col)
+    if v is None or pd.isna(v):
+        return 0.0
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def txt(r, col):
+    v = r.get(col)
+    return '' if v is None or pd.isna(v) else str(v).strip()
+
+
 def iso(d):
     if pd.isna(d):
         return ''
@@ -196,6 +212,21 @@ def build_rows(df, hoje=None):
             'DESCRICAO_ULTIMO': descricao_ultimo,
             'OBSERVACOES': OBSERVACOES_TRANSITO.get(minuta, []),
             'EFF_UF': eff_uf,
+            # --- Auditoria (frete do portal x tabela cadastrada) ---
+            'CTE': txt(r, 'CTE'),
+            'ORIG_CIDADE': txt(r, 'CIDADE ORIGEM'),
+            'ORIG_UF': txt(r, 'UF ORIGEM'),
+            'SERVICO': txt(r, 'SERVICO'),
+            'TABELA_PORTAL': txt(r, 'TABELA'),
+            'PESO_CALC': num(r, 'PESO CALC'),
+            'M3': num(r, 'METRAGEM CUBICA'),
+            'TX. COLETA': num(r, 'TX. COLETA'),
+            'TX. ENTREGA': num(r, 'TX. ENTREGA'),
+            'TX. DESPACHO': num(r, 'TX. DESPACHO'),
+            'FRETE TAS': num(r, 'FRETE TAS'),
+            'FRETE TRT': num(r, 'FRETE TRT'),
+            'FRETE TDE': num(r, 'FRETE TDE'),
+            'FRETE SET/CAT': num(r, 'FRETE SET/CAT'),
             'REGIAO': UF_REGIAO.get(eff_uf, ''),
             'LAT': UF_CENTROID[eff_uf][0] if eff_uf in UF_CENTROID else None,
             'LNG': UF_CENTROID[eff_uf][1] if eff_uf in UF_CENTROID else None,

@@ -5,6 +5,7 @@
 let _simTabelas = [];
 let _simServicos = [];
 let _simIcms = {};
+let _simLigado = false;
 
 async function carregarSimulador() {
   const el = document.getElementById('sim-msg');
@@ -28,8 +29,10 @@ async function carregarSimulador() {
   });
   const data = document.getElementById('sim-data');
   if (!data.value) data.value = new Date().toISOString().slice(0, 10);
-  if (!document.getElementById('sim-cidades').options.length) {
-    document.getElementById('sim-cidades').innerHTML = tabCidadesConhecidas().map(c => `<option value="${cadEsc(c)}">`).join('');
+  if (!_simLigado) {
+    _simLigado = true;
+    cidLigarUf('sim-ouf', 'sim-ocidades');
+    cidLigarUf('sim-duf', 'sim-dcidades');
   }
   simAtualizarTabelas();
 }
