@@ -104,6 +104,8 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .aud-col-filtros th{background:#e8eef6 !important;padding:4px !important}
 .aud-col-f{width:100%;min-width:60px;border:1px solid var(--border);border-radius:5px;padding:4px 6px;font-size:.74rem;font-weight:400;color:#1e293b;background:#fff}
 .aud-col-f.ativo{border-color:var(--primary-light);background:#eff6ff}
+.tf-versao{border:1px dashed #7c3aed;border-radius:8px;padding:12px;margin-top:14px;background:#faf5ff}
+.tf-versao input{border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:.84rem;background:#fff}
 .cad-del{background:transparent;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
 .filters{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters label{font-size:.75rem;color:var(--gray);font-weight:600}
@@ -480,7 +482,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div id="cad-tabela-msg" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
     <table>
-      <thead><tr><th>Nome da tabela</th><th>Serviço</th><th style="width:170px">Vigência</th><th style="width:90px">Tipo</th><th style="width:110px">Trechos</th></tr></thead>
+      <thead><tr><th>Nome da tabela</th><th>Serviço</th><th style="width:170px">Vigência</th><th style="width:100px">Situação</th><th style="width:90px">Tipo</th><th style="width:110px">Trechos</th></tr></thead>
       <tbody id="tb-cad-tabela"></tbody>
     </table>
   </div>
@@ -708,7 +710,7 @@ const COLORS = {
 const _MN_MAP = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 function _fmtMes(m){ const p=m.split('-'); return (_MN_MAP[p[1]]||p[1])+'/'+p[0]; }
 // Data/hora da ultima publicacao de codigo (atualizar a cada push que mexe na tela, junto com o ?v= dos scripts).
-const SITE_VERSAO = '26/09/2026 00:35';
+const SITE_VERSAO = '26/09/2026 00:44';
 const MURAL_URL = 'https://claude.ai/artifact/XYivj9hbyRCDPE6q7h3Gvu';
 
 // --- ATUALIZAR AGORA (dispara o pipeline fora do horario programado) ---
@@ -2432,12 +2434,12 @@ async function excluirServico(id) {
 // Start
 init();
 </script>
-<script src="frete-calculo.js?v=202609260035"></script>
-<script src="cadastro-tabela.js?v=202609260035"></script>
-<script src="cadastro-icms.js?v=202609260035"></script>
-<script src="cadastro-cidade.js?v=202609260035"></script>
-<script src="cadastro-trecho.js?v=202609260035"></script>
-<script src="simulador.js?v=202609260035"></script>
-<script src="auditoria.js?v=202609260035"></script>
+<script src="frete-calculo.js?v=202609260044"></script>
+<script src="cadastro-tabela.js?v=202609260044"></script>
+<script src="cadastro-icms.js?v=202609260044"></script>
+<script src="cadastro-cidade.js?v=202609260044"></script>
+<script src="cadastro-trecho.js?v=202609260044"></script>
+<script src="simulador.js?v=202609260044"></script>
+<script src="auditoria.js?v=202609260044"></script>
 </body>
 </html>

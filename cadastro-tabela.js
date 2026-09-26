@@ -100,16 +100,30 @@ async function carregarTabelas() {
   }
 }
 
+// Situacao de uma versao de tabela na data de hoje.
+function tabSituacao(t) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  if (t.vigencia && t.vigencia < hoje) return ['Encerrada', '#64748b', '#f1f5f9'];
+  if (t.vigenciaInicio && t.vigenciaInicio > hoje) return ['Futura', '#1d4ed8', '#dbeafe'];
+  return ['Vigente', '#15803d', '#dcfce7'];
+}
+
 function renderTabelas() {
-  const lista = [..._tabelas].sort((a, b) => (b.vigencia || '').localeCompare(a.vigencia || '') || a.nome.localeCompare(b.nome));
-  document.getElementById('tb-cad-tabela').innerHTML = lista.map(t => `
+  // versoes da mesma tabela (mesmo nome e servico) ficam juntas, da mais nova para a mais antiga
+  const lista = [..._tabelas].sort((a, b) => a.nome.localeCompare(b.nome) || (a.servicoNome || '').localeCompare(b.servicoNome || '') ||
+    (b.vigenciaInicio || '').localeCompare(a.vigenciaInicio || '') || (b.vigencia || '').localeCompare(a.vigencia || ''));
+  document.getElementById('tb-cad-tabela').innerHTML = lista.map(t => {
+    const [sit, cor, fundo] = tabSituacao(t);
+    return `
     <tr style="cursor:pointer" onclick="abrirTabela('${t.id}')" title="Abrir tabela">
       <td><b>${cadEsc(t.nome)}</b>${t.referencia ? ` <span style="color:#64748b;font-size:.75rem">(${cadEsc(t.referencia)})</span>` : ''}</td>
       <td>${cadEsc(t.servicoNome || '—')}</td>
       <td style="font-size:.8rem">${freteVigTxt(t)}</td>
+      <td><span class="aud-st" style="background:${fundo};color:${cor}">${sit}</span></td>
       <td>${t.tipo === 'COMPRA' ? 'Compra' : 'Venda'}</td>
       <td style="color:#64748b;font-size:.78rem">${(t.trechos || []).length} trecho(s)</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 // ---------- FORMULARIO DA TABELA (cabecalho + composicao) ----------
@@ -188,13 +202,127 @@ async function abrirTabela(id) {
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <button id="tf-salvar" class="cad-btn" type="button" onclick="salvarTabela()">💾 Salvar e ir para os trechos</button>
       ${t ? `<button class="cad-btn" type="button" style="background:var(--primary-light)" onclick="abrirTrechos('${t.id}')">Trechos (${(t.trechos || []).length})</button>` : ''}
+      ${t ? `<button class="cad-btn tf-so-editor" type="button" style="background:#7c3aed" onclick="tabAbrirVersao()">🔁 Nova versão (reajuste)</button>` : ''}
       <button class="cad-btn" type="button" style="background:#64748b" onclick="carregarTabelas()">Voltar</button>
       ${t ? '<button class="cad-del" type="button" style="margin-left:auto" onclick="excluirTabela()">Excluir tabela</button>' : ''}
+    </div>
+    <div id="tf-versao" class="tf-versao" hidden>
+      <div class="tf-lbl">Nova versão desta tabela</div>
+      <div style="font-size:.76rem;color:#475569;margin-bottom:8px">Copia todos os trechos e regras para uma nova versão com outro período e, se informado, aplica o reajuste nos valores em R$ (faixas, excedente, valores fixos, fração e mínimos; percentuais como GRIS e Advalorem não mudam). A versão atual é ajustada para não sobrepor: termina na véspera da nova (ou começa no dia seguinte, se a nova for anterior).</div>
+      <div class="tf-linha">
+        <div><label class="tf-lbl">Início da nova versão</label><input id="tv-inicio" type="date"></div>
+        <div><label class="tf-lbl">Válida até *</label><input id="tv-ate" type="date"></div>
+        <div><label class="tf-lbl">Reajuste (%)</label><input id="tv-pct" type="text" inputmode="decimal" placeholder="ex.: 4,5 ou -4,22" style="width:120px"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="cad-btn" type="button" style="background:#7c3aed" onclick="tabCriarVersao()">Criar versão</button>
+        <button class="cad-btn" type="button" style="background:#64748b" onclick="document.getElementById('tf-versao').hidden = true">Cancelar</button>
+      </div>
+      <div id="tv-msg" style="font-size:.78rem;margin-top:8px;min-height:1em"></div>
     </div>`;
 
   if (!podeEditar) {
     f.querySelectorAll('input,select').forEach(el => { el.disabled = true; });
-    f.querySelectorAll('#tf-salvar,.cad-del').forEach(el => el.remove());
+    f.querySelectorAll('#tf-salvar,.cad-del,.tf-so-editor').forEach(el => el.remove());
+  }
+}
+
+// ---------- VERSOES (reajuste) ----------
+
+function tabDiaMais(iso, n) {
+  const d = new Date(iso + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function tabAbrirVersao() {
+  const t = _tabelas.find(x => x.id === _tabEditando);
+  if (!t) return;
+  const box = document.getElementById('tf-versao');
+  box.hidden = false;
+  // sugestao: a nova versao comeca no dia seguinte ao fim da atual e vale 1 ano
+  if (!document.getElementById('tv-inicio').value && t.vigencia) {
+    const ini = tabDiaMais(t.vigencia, 1);
+    document.getElementById('tv-inicio').value = ini;
+    document.getElementById('tv-ate').value = tabDiaMais(tabDiaMais(ini, 365), -1);
+  }
+  box.scrollIntoView({ block: 'nearest' });
+}
+
+// Aplica o reajuste (fator) nos valores em R$ das regras de um trecho.
+function tabReajustarRegras(regras, fator) {
+  const r2 = v => (v === null || v === undefined || v === '') ? v : Math.round(v * fator * 100) / 100;
+  const out = JSON.parse(JSON.stringify(regras || {}));
+  for (const [k, r] of Object.entries(out)) {
+    const tipo = TAB_TIPO[k];
+    if (tipo === 'PCT_NF' || tipo === 'PCT_CTE') { r.minimo = r2(r.minimo); continue; }
+    ['valor', 'valorFranquia', 'minimo'].forEach(c => { if (c in r) r[c] = r2(r[c]); });
+    (r.faixas || []).forEach(f => { f.valor = r2(f.valor); f.valorFranquia = r2(f.valorFranquia); });
+  }
+  return out;
+}
+
+function tvMsg(txt, erro) {
+  const el = document.getElementById('tv-msg');
+  el.textContent = txt;
+  el.style.color = erro ? '#b91c1c' : '#16a34a';
+}
+
+async function tabCriarVersao() {
+  if (!(await cadPodeEditar())) return;
+  const ini = document.getElementById('tv-inicio').value;
+  const ate = document.getElementById('tv-ate').value;
+  const pctTxt = document.getElementById('tv-pct').value.trim();
+  const pct = pctTxt ? freteNum(pctTxt.replace('%', '')) : 0;
+  if (!ate) { tvMsg('Informe até quando a nova versão vale.', true); return; }
+  if (ini && ini > ate) { tvMsg('O início não pode ser depois da data "válida até".', true); return; }
+  if (pct === null) { tvMsg('Reajuste inválido. Use por exemplo 4,5 ou -4,22.', true); return; }
+  try {
+    const lista = await lerTabelas();
+    const orig = lista.find(x => x.id === _tabEditando);
+    if (!orig) { tvMsg('Tabela não encontrada.', true); return; }
+    const origIni = orig.vigenciaInicio || '';
+    const origFim = orig.vigencia || '';
+    // Nova versao DEPOIS da atual: a atual termina na vespera do inicio da nova.
+    // Nova versao ANTES da atual: a atual passa a comecar no dia seguinte ao fim da nova.
+    let ajuste;
+    if (!origFim || ate > origFim) {
+      // Nova versao DEPOIS da atual: a atual termina na vespera do inicio da nova.
+      if (!ini) { tvMsg('Informe o início da nova versão — a versão atual vai terminar na véspera.', true); return; }
+      if (origIni && ini <= origIni) { tvMsg('O início da nova versão tem que ser depois do início da atual (' + tabFmtData(origIni) + ').', true); return; }
+      ajuste = (origFim && ini > tabDiaMais(origFim, 1)) ? null : { vigencia: tabDiaMais(ini, -1) };
+    } else if (ate < origFim) {
+      // Nova versao ANTES da atual: a atual passa a comecar no dia seguinte ao fim da nova.
+      if (origIni && ini && ini >= origIni) { tvMsg('Uma versão anterior tem que começar antes da atual (' + tabFmtData(origIni) + ').', true); return; }
+      ajuste = (origIni && ate < origIni) ? null : { vigenciaInicio: tabDiaMais(ate, 1) };
+    } else {
+      tvMsg('A nova versão não pode terminar no mesmo dia da atual (' + tabFmtData(origFim) + ').', true); return;
+    }
+    if (lista.some(x => x.id !== orig.id && x.nome.toUpperCase() === orig.nome.toUpperCase() && x.vigencia === ate)) {
+      tvMsg('Já existe uma versão desta tabela com essa data "válida até".', true); return;
+    }
+    const agora = new Date().toISOString();
+    const fator = 1 + (pct || 0) / 100;
+    const nova = {
+      ...JSON.parse(JSON.stringify(orig)),
+      id: novoId(),
+      vigenciaInicio: ini || '',
+      vigencia: ate,
+      reajustePct: pct || 0,
+      versaoDe: orig.id,
+      trechos: (orig.trechos || []).map(tr => ({ ...tr, id: novoId(), regras: tabReajustarRegras(tr.regras, fator) })),
+      criadoEm: agora,
+      atualizadoEm: agora,
+    };
+    const final = lista.map(x => (x.id === orig.id && ajuste ? { ...x, ...ajuste, atualizadoEm: agora } : x)).concat(nova);
+    await gravarTabelas(final);
+    _tabelas = final;
+    await abrirTabela(nova.id);
+    tfMsg(`Nova versão criada (${freteVigTxt(nova)}${pct ? `, reajuste ${freteFmtNum(pct)}%` : ''}).` +
+      (ajuste ? ` A versão anterior ficou ${freteVigTxt({ ...orig, ...ajuste })}.` : ''), false);
+  } catch (e) {
+    console.error(e);
+    tvMsg('Não foi possível criar a versão (verifique a conexão).', true);
   }
 }
 

@@ -197,7 +197,7 @@ function audRenderTabela() {
       <td><b>${cadEsc(r.MINUTA)}</b><div style="font-size:.7rem;color:#64748b">CT-e ${cadEsc(r.CTE || '—')}</div></td>
       <td>${r['DATA EMISSAO'] ? tabFmtData(r['DATA EMISSAO']) : ''}</td>
       <td style="font-size:.74rem">${cadEsc(r.SERVICO || '—')}</td>
-      <td style="font-size:.72rem">${cadEsc(r.TABELA_PORTAL || '—')}${x.escolha ? `<div style="color:#2563a8">calc.: ${cadEsc(x.escolha.tabela.nome)}</div>` : ''}</td>
+      <td style="font-size:.72rem">${cadEsc(r.TABELA_PORTAL || '—')}${x.escolha ? `<div style="color:#2563a8">calc.: ${cadEsc(x.escolha.tabela.nome)} <span style="color:#64748b">(${freteVigTxt(x.escolha.tabela)})</span></div>` : ''}</td>
       <td>${r.COTACAO === 'S' ? `<span class="aud-st" style="background:#fef3c71a;background:#fef3c7;color:#92400e">Sim${r.COTACAO_NUM ? ' · ' + cadEsc(r.COTACAO_NUM) : ''}</span>` : '<span style="color:#94a3b8;font-size:.76rem">Não</span>'}</td>
       <td>${lugar(r.ORIG_CIDADE, r.ORIG_UF)}</td>
       <td>${lugar(r.EFF_CIDADE, r.EFF_UF)}</td>

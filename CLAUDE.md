@@ -84,7 +84,11 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     planilha "Regra Icms.xlsx" do usuário (729 combinações).
     **Vigência = data FINAL** ("válida até", campo `vigencia`) + início opcional (`vigenciaInicio`). Escolha da tabela
     (`freteAcharTabela`): mesmo serviço, válida na data (≤ válida até e ≥ início), trecho que casa; vence o início mais
-    recente, depois o trecho mais específico, depois a que termina antes. `freteVigTxt(t)` formata para a tela. Itens removidos a pedido: Redespacho, KM rodado, Faixas de peso, Volume,
+    recente, depois o trecho mais específico, depois a que termina antes. `freteVigTxt(t)` formata para a tela.
+    **Versões**: botão "🔁 Nova versão (reajuste)" na tabela (`tabCriarVersao`) copia trechos/regras com outro período e
+    % de reajuste nos valores em R$ (não nos %); se a nova termina depois da atual, a atual termina na véspera do início
+    da nova; se termina antes, a atual passa a começar no dia seguinte. Lista mostra Situação (Vigente/Encerrada/Futura)
+    e agrupa versões pelo nome; a Auditoria mostra "calc.: tabela (período)". Itens removidos a pedido: Redespacho, KM rodado, Faixas de peso, Volume,
     Taxa de emergência, Percentual sobre custos, Peso por Fração, Taxa por NF.
   - Aba **🧮 Simulador** (`simulador.js`): escolhe serviço/tabela (ou automática), data, origem, destino, peso, m³,
     valor NF e CT-e e mostra o cálculo item a item. **Salvar simulação** (só CAD_EDITORES) grava entrada + resultado
