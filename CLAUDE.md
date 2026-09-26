@@ -12,7 +12,10 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
 - O domínio fica atrás do **Cloudflare Access** da PortoEx (login obrigatório), então
   não dá para conferir o site via curl — só o redirecionamento 302 para `portoex.cloudflareaccess.com`.
 - DNS no Cloudflare: CNAME `forte` → `maurocmarques-creator.github.io`, proxied.
-- Qualquer push no `main` publica. **Pedir confirmação ao usuário antes de dar push.**
+- Qualquer push no `main` publica. **Ao alterar qualquer `.js` (frete-calculo, cadastro-*, simulador, auditoria),
+  atualize o `?v=AAAAMMDDHHMM` das tags `<script>` no fim do `index.html`** — senão navegador/Cloudflare servem o .js
+  antigo em cache (até ~10 min) junto com o index.html novo e a tela quebra.
+- **Pedir confirmação ao usuário antes de dar push.**
 - O pipeline automático também faz commits (`Atualizacao automatica ...`) — sempre
   `git pull` antes de começar a mexer, para evitar conflito no `index.html`.
 
