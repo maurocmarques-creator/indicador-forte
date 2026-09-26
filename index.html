@@ -155,6 +155,7 @@ tr:last-child td{border-bottom:none}
   <div class="tab active" onclick="showTab('totais')">Totais</div>
   <div class="tab" onclick="showTab('totais-cx')" style="display:none">Totais por CX</div><!-- oculta a pedido do cliente -->
   <div class="tab" onclick="showTab('performance')">Performance</div>
+  <div class="tab" onclick="showTab('antecipacao')">Antecipação</div>
   <div class="tab" onclick="showTab('perf-dest')">Perf. Destinatário</div>
   <div class="tab" onclick="showTab('barra-perf')">Barra Performance</div>
   <div class="tab" onclick="showTab('transito')">🚚 Em Trânsito</div>
@@ -304,6 +305,34 @@ tr:last-child td{border-bottom:none}
     <table>
       <thead><tr><th>Mês</th><th>Total</th><th>No Prazo</th><th>%</th><th>Em Atraso</th><th>%</th><th>Eficiência</th></tr></thead>
       <tbody id="tb-perf-mes"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAB: ANTECIPACAO (entregas no prazo por dias de antecedencia) -->
+<div id="tab-antecipacao" class="content">
+  <div class="kpi-row">
+    <div class="kpi"><label>No dia do prazo <span class="tag-filtro">(Prev. Entrega)</span></label><div class="value" id="kpi-ant-0" style="color:#0f766e">-</div><div class="sub" id="kpi-ant-0-pct">-</div></div>
+    <div class="kpi"><label>1 dia antes <span class="tag-filtro">(Prev. Entrega)</span></label><div class="value" id="kpi-ant-1" style="color:#2563a8">-</div><div class="sub" id="kpi-ant-1-pct">-</div></div>
+    <div class="kpi"><label>2 dias antes <span class="tag-filtro">(Prev. Entrega)</span></label><div class="value" id="kpi-ant-2" style="color:#7c3aed">-</div><div class="sub" id="kpi-ant-2-pct">-</div></div>
+    <div class="kpi"><label>3 ou mais dias antes <span class="tag-filtro">(Prev. Entrega)</span></label><div class="value" id="kpi-ant-3" style="color:#c2410c">-</div><div class="sub" id="kpi-ant-3-pct">-</div></div>
+  </div>
+  <p style="font-size:.78rem;color:#64748b;margin:-8px 0 16px" id="ant-nota">Entregas no prazo, com data de entrega preenchida, separadas pela antecedência em dias úteis entre a entrega e o prazo (agendamento, se houver; senão a previsão de entrega). Sábado e domingo não contam.</p>
+  <div class="charts-grid triple">
+    <div class="chart-card">
+      <h3>Antecipação por Mês <span class="tag-filtro">(Prev. Entrega)</span></h3>
+      <canvas id="ch-ant-mes" style="max-height:280px"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Distribuição <span class="tag-filtro">(Prev. Entrega)</span></h3>
+      <canvas id="ch-ant-pizza"></canvas>
+    </div>
+  </div>
+  <div class="table-card">
+    <h3>Antecipação por Mês <span class="tag-filtro">(Prev. Entrega)</span></h3>
+    <table>
+      <thead><tr><th>Mês</th><th>Entregas no prazo</th><th>No dia</th><th>%</th><th>1 dia antes</th><th>%</th><th>2 dias antes</th><th>%</th><th>3+ dias antes</th><th>%</th></tr></thead>
+      <tbody id="tb-ant-mes"></tbody>
     </table>
   </div>
 </div>
@@ -1000,6 +1029,7 @@ function renderAll() {
   renderPerformance();
   renderDestTable();
   renderBarraPerf();
+  if (document.getElementById('tab-antecipacao').classList.contains('active')) renderAntecipacao();
   if (document.getElementById('tab-mapa').classList.contains('active')) renderMapa();
   if (document.getElementById('tab-transito').classList.contains('active')) renderTransito();
 }
@@ -1199,6 +1229,83 @@ function renderTotaisCx() {
 // Considera apenas entregas com baixa efetiva (NO PRAZO / EM ATRASO).
 // As "Em Transito" (sem baixa) tem aba propria, para nao diluir a
 // performance de quem ja foi entregue.
+// --- TAB: ANTECIPACAO ---
+// Entregas NO PRAZO separadas por quantos dias uteis antes do prazo
+// efetivo (agendamento, senao previsao de entrega) foram entregues.
+const ANT_NOTA = 'Entregas no prazo, com data de entrega preenchida, separadas pela antecedência em dias úteis entre a entrega e o prazo (agendamento, se houver; senão a previsão de entrega). Sábado e domingo não contam.';
+const ANT_FAIXAS = [
+  { rot: 'No dia do prazo', cor: '#0f766e' },
+  { rot: '1 dia antes', cor: '#2563a8' },
+  { rot: '2 dias antes', cor: '#7c3aed' },
+  { rot: '3 ou mais dias antes', cor: '#c2410c' },
+];
+
+function antDiasUteisAntes(entregaIso, prazoIso) {
+  const ent = new Date(entregaIso + 'T00:00:00');
+  const prz = new Date(prazoIso + 'T00:00:00');
+  if (ent >= prz) return 0;
+  let dias = 0;
+  const c = new Date(ent);
+  c.setDate(c.getDate() + 1);
+  while (c <= prz) {
+    const dow = c.getDay();
+    if (dow !== 0 && dow !== 6) dias++;
+    c.setDate(c.getDate() + 1);
+  }
+  return dias;
+}
+
+function renderAntecipacao() {
+  const base = filteredRowsPerf.filter(r => r.STATUS === 'NO PRAZO' && r['DATA ENTREGA'] && (r['DATA DE AGENDAMENTO'] || r['PREV. ENTREGA']));
+  const rows = [];
+  let depoisDoPrazo = 0;   // marcadas NO PRAZO por correcao manual, mas com entrega depois do prazo
+  base.forEach(r => {
+    const prazo = r['DATA DE AGENDAMENTO'] || r['PREV. ENTREGA'];
+    if (r['DATA ENTREGA'] > prazo) { depoisDoPrazo++; return; }
+    rows.push({ mes: r.MES_PREV, faixa: Math.min(antDiasUteisAntes(r['DATA ENTREGA'], prazo), 3) });
+  });
+  const semData = filteredRowsPerf.filter(r => r.STATUS === 'NO PRAZO' && !r['DATA ENTREGA']).length;
+  const tot = rows.length || 1;
+  const cont = ANT_FAIXAS.map((_, i) => rows.filter(x => x.faixa === i).length);
+  cont.forEach((n, i) => {
+    document.getElementById('kpi-ant-' + i).textContent = n.toLocaleString('pt-BR');
+    document.getElementById('kpi-ant-' + i + '-pct').textContent = (n / tot * 100).toFixed(1) + '% das entregas no prazo';
+  });
+  const extras = [];
+  if (semData) extras.push(semData.toLocaleString('pt-BR') + ' entrega(s) no prazo sem data de entrega no portal ficaram de fora');
+  if (depoisDoPrazo) extras.push(depoisDoPrazo.toLocaleString('pt-BR') + ' marcada(s) como no prazo por correção manual, mas com entrega depois do prazo, ficaram de fora');
+  document.getElementById('ant-nota').textContent = ANT_NOTA + (extras.length ? ' ' + extras.join('; ') + '.' : '');
+
+  const meses = [...new Set(rows.map(x => x.mes))].sort();
+  const labels = meses.map(m => MES_NOMES[m] || m);
+  const porMes = ANT_FAIXAS.map((_, i) => meses.map(m => rows.filter(x => x.mes === m && x.faixa === i).length));
+
+  destroyChart('ant-mes');
+  charts['ant-mes'] = new Chart(document.getElementById('ch-ant-mes'), {
+    type: 'bar',
+    data: { labels, datasets: ANT_FAIXAS.map((f, i) => ({ label: f.rot, data: porMes[i], backgroundColor: f.cor, borderRadius: 4 })) },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' }, datalabels: DL_BAR_STACKED },
+      scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid: { color: '#f1f5f9' } } } }
+  });
+
+  destroyChart('ant-pizza');
+  charts['ant-pizza'] = new Chart(document.getElementById('ch-ant-pizza'), {
+    type: 'doughnut',
+    data: { labels: ANT_FAIXAS.map(f => f.rot), datasets: [{ data: cont, backgroundColor: ANT_FAIXAS.map(f => f.cor) }] },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' }, datalabels: DL_DONUT } }
+  });
+
+  const pct = (n, t) => (t ? n / t * 100 : 0).toFixed(1) + '%';
+  const linha = (rot, lista, total) => {
+    const t = lista.length;
+    const c = ANT_FAIXAS.map((_, i) => lista.filter(x => x.faixa === i).length);
+    return '<tr' + (total ? ' style="font-weight:700;background:#f8fafc"' : '') + '><td>' + (total ? rot : '<b>' + rot + '</b>') + '</td><td>' + t.toLocaleString('pt-BR') + '</td>' +
+      c.map(n => '<td>' + n.toLocaleString('pt-BR') + '</td><td>' + pct(n, t) + '</td>').join('') + '</tr>';
+  };
+  document.getElementById('tb-ant-mes').innerHTML =
+    meses.map(m => linha(MES_NOMES[m] || m, rows.filter(x => x.mes === m))).join('') + linha('TOTAL', rows, true);
+}
+
 function renderPerformance() {
   const rows = filteredRowsPerf.filter(r=>r.STATUS==='NO PRAZO'||r.STATUS==='EM ATRASO');
   // Meses vem so das entregas ja baixadas (rows), nao de getMesesPerf()
@@ -2041,6 +2148,7 @@ function showTab(id) {
   if (id === 'cad-cidade') carregarCidadesTela();
   if (id === 'auditoria') carregarAuditoria();
   if (id === 'mapa') renderMapa();
+  if (id === 'antecipacao') renderAntecipacao();
   if (id === 'transito') renderTransito();
 }
 
