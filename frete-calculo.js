@@ -74,21 +74,53 @@ function freteFmtNum(n) {
 
 // ---------- TRECHO ----------
 
-// Pontua o quanto um trecho casa com origem/destino: -1 = nao casa;
-// cidade em branco no trecho vale para o estado inteiro (casa com menos pontos).
+// Trechos cadastrados (Cadastro > Trecho): grupos de cidades com nome, que
+// podem ser origem/destino de um trecho de tabela (origemGrupoId/destinoGrupoId).
+// Quem usa o motor carrega a lista e chama freteDefinirGrupos(lista).
+let _freteGrupos = {};
+let _freteGruposLista = [];
+function freteDefinirGrupos(lista) {
+  _freteGruposLista = lista || [];
+  _freteGrupos = Object.fromEntries(_freteGruposLista.map(g => [g.id, g]));
+}
+
+// Um lado do trecho (origem ou destino) casa com o lugar? -1 = nao;
+// 0 = estado todo, 1 = trecho cadastrado (grupo), 2 = cidade.
+function freteLadoPontos(tr, lado, lugar) {
+  const gid = tr[lado + 'GrupoId'];
+  if (gid) {
+    const g = _freteGrupos[gid];
+    if (!g) return -1;
+    const ok = g.cidades.some(c => c.uf === freteNorm(lugar.uf) && freteNorm(c.nome) === freteNorm(lugar.cidade));
+    return ok ? 1 : -1;
+  }
+  if (freteNorm(tr[lado + 'Uf']) !== freteNorm(lugar.uf)) return -1;
+  const cid = tr[lado + 'Cidade'];
+  if (!cid) return 0;
+  return freteNorm(cid) === freteNorm(lugar.cidade) ? 2 : -1;
+}
+
+// Pontua o quanto um trecho casa com origem/destino: -1 = nao casa.
+// Mais especifico vence: cidade > trecho cadastrado > estado todo; o destino
+// pesa mais que a origem.
 function freteTrechoPontos(tr, origem, destino) {
-  if (freteNorm(tr.origemUf) !== freteNorm(origem.uf)) return -1;
-  if (freteNorm(tr.destinoUf) !== freteNorm(destino.uf)) return -1;
-  let p = 0;
-  if (tr.origemCidade) {
-    if (freteNorm(tr.origemCidade) !== freteNorm(origem.cidade)) return -1;
-    p += 1;
-  }
-  if (tr.destinoCidade) {
-    if (freteNorm(tr.destinoCidade) !== freteNorm(destino.cidade)) return -1;
-    p += 2;
-  }
-  return p;
+  const o = freteLadoPontos(tr, 'origem', origem);
+  if (o < 0) return -1;
+  const d = freteLadoPontos(tr, 'destino', destino);
+  if (d < 0) return -1;
+  return o + d * 4;
+}
+
+// Texto de um lado do trecho: "Itajaí/SC", "SP (estado todo)" ou "Trecho SC_Capital".
+function freteLadoTxt(tr, lado) {
+  const gid = tr[lado + 'GrupoId'];
+  if (gid) return `Trecho ${(_freteGrupos[gid] || {}).nome || tr[lado + 'GrupoNome'] || '?'}`;
+  const cid = tr[lado + 'Cidade'];
+  return cid ? `${cid}/${tr[lado + 'Uf']}` : `${tr[lado + 'Uf']} (estado todo)`;
+}
+
+function freteTrechoTxt(tr) {
+  return `${freteLadoTxt(tr, 'origem')} → ${freteLadoTxt(tr, 'destino')}`;
 }
 
 function freteMelhorTrecho(tabela, origem, destino) {

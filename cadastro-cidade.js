@@ -68,11 +68,14 @@ const CID_UF_NOMES = {
 
 // opts.estadoTodo: a lista tambem oferece "UF — estado todo" (cidade vazia),
 // usado nos trechos das tabelas.
+// opts.grupoId: id de um <input hidden>; a lista tambem oferece os trechos
+// cadastrados (Cadastro > Trecho) e grava o id escolhido nele.
 function cidAutocomplete(inputId, ufId, cidId, opts = {}) {
   const inp = document.getElementById(inputId);
   const lista = inp.parentElement.querySelector('.cid-ac-lista');
   const ufEl = document.getElementById(ufId);
   const cidEl = document.getElementById(cidId);
+  const grpEl = opts.grupoId ? document.getElementById(opts.grupoId) : null;
   let itens = [];
   let ativo = -1;
 
@@ -80,6 +83,16 @@ function cidAutocomplete(inputId, ufId, cidId, opts = {}) {
   const marcarAtivo = () => lista.querySelectorAll('.cid-ac-item').forEach((el, i) => el.classList.toggle('ativo', i === ativo));
 
   function escolher(c) {
+    if (grpEl) grpEl.value = c.grupo ? c.id : '';
+    if (c.grupo) {
+      ufEl.value = '';
+      cidEl.value = '';
+      inp.value = `Trecho ${c.nome}`;
+      inp.classList.add('cid-ok');
+      grpEl.dispatchEvent(new Event('change'));
+      fechar();
+      return;
+    }
     ufEl.value = c.uf;
     cidEl.value = c.estado ? '' : c.nome;
     inp.value = c.estado ? `${c.uf} — estado todo` : `${c.nome}/${c.uf}`;
@@ -92,6 +105,7 @@ function cidAutocomplete(inputId, ufId, cidId, opts = {}) {
   function buscar() {
     ufEl.value = '';
     cidEl.value = '';
+    if (grpEl) grpEl.value = '';
     inp.classList.remove('cid-ok');
     // aceita "itajai", "itajai sc" ou "itajai/sc"
     const txt = freteNorm(inp.value).replace('/', ' ');
@@ -119,9 +133,19 @@ function cidAutocomplete(inputId, ufId, cidId, opts = {}) {
       const exatas = itens.filter(c => freteNorm(c.nome) === nomeBusca);
       itens = exatas.concat(estados, itens.filter(c => !exatas.includes(c))).slice(0, 15);
     }
+    if (grpEl) {
+      const grupos = (_freteGruposLista || []).filter(g => freteNorm(g.nome).includes(txt) || freteNorm(g.nome).includes(nomeBusca))
+        .map(g => ({ grupo: true, id: g.id, nome: g.nome, n: g.cidades.length }));
+      // ordem: cidade de nome exato e estado primeiro, depois os trechos cadastrados, depois as demais cidades
+      const k = itens.findIndex(c => !(c.estado || freteNorm(c.nome) === nomeBusca));
+      const pos = k < 0 ? itens.length : k;
+      itens = itens.slice(0, pos).concat(grupos, itens.slice(pos)).slice(0, 15);
+    }
     ativo = itens.length ? 0 : -1;
     lista.innerHTML = itens.length
-      ? itens.map((c, i) => c.estado
+      ? itens.map((c, i) => c.grupo
+          ? `<div class="cid-ac-item" data-i="${i}"><span><b>Trecho</b> · ${cadEsc(c.nome)}</span><span class="uf">${c.n} cidade(s)</span></div>`
+          : c.estado
           ? `<div class="cid-ac-item" data-i="${i}"><span><b>Estado todo</b> · ${cadEsc(c.nome)}</span><span class="uf">${c.uf}</span></div>`
           : `<div class="cid-ac-item" data-i="${i}"><b>${cadEsc(c.nome)}</b><span class="uf">${c.uf}</span></div>`).join('')
       : `<div class="cid-ac-vazio">${_cidades ? 'Nenhuma cidade encontrada.' : 'Carregando cidades...'}</div>`;
@@ -150,7 +174,13 @@ function cidAutocomplete(inputId, ufId, cidId, opts = {}) {
 
   // Para preencher por codigo (ex.: Auditoria -> Abrir no Simulador).
   return {
-    definir(uf, nome) {
+    definir(uf, nome, grupoId) {
+      if (grupoId) {
+        const g = (_freteGruposLista || []).find(x => x.id === grupoId);
+        escolher({ grupo: true, id: grupoId, nome: g ? g.nome : '(trecho excluído)' });
+        return;
+      }
+      if (grpEl) grpEl.value = '';
       if (uf && !nome && opts.estadoTodo) { escolher({ uf, nome: CID_UF_NOMES[uf] || uf, estado: true }); return; }
       const c = (_cidades || []).find(x => x.uf === uf && freteNorm(x.nome) === freteNorm(nome));
       if (c) { escolher(c); return; }

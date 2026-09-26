@@ -22,7 +22,7 @@ async function carregarSimulador() {
   const el = document.getElementById('sim-msg');
   el.textContent = 'Carregando tabelas...';
   try {
-    [_simTabelas, _simServicos, _simIcms] = await Promise.all([lerTabelas(), lerServicos(), lerIcms()]);
+    [_simTabelas, _simServicos, _simIcms] = await Promise.all([lerTabelas(), lerServicos(), lerIcms(), lerGrupos()]);
     el.textContent = _simTabelas.length ? '' : 'Nenhuma tabela cadastrada ainda (Cadastro ▾ > Tabela).';
   } catch (e) {
     console.error(e);
@@ -109,7 +109,7 @@ function simular() {
   const res = freteCalcular(t, escolha.trecho, entrada, _simIcms);
   const dec = Number.isInteger(t.precisao) ? t.precisao : 2;
   const lugar = (uf, cid) => cid ? `${cadEsc(cid)}/${uf}` : `${uf} (estado todo)`;
-  const trechoTxt = `${lugar(escolha.trecho.origemUf, escolha.trecho.origemCidade)} → ${lugar(escolha.trecho.destinoUf, escolha.trecho.destinoCidade)}`;
+  const trechoTxt = cadEsc(freteTrechoTxt(escolha.trecho));
 
   const avisos = [...res.avisos];
   if (avisoVig) avisos.unshift(avisoVig);

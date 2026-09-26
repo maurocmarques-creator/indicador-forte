@@ -91,6 +91,11 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     no Supabase, chave `simulacoes_frete` (formato no topo do `simulador.js`, até 2000, mais nova primeiro); a grade
     "Simulações salvas" abaixo tem busca, Abrir (recalcula com as tabelas de hoje e avisa se o total mudou), Excluir e
     Exportar Excel.
+  - Menu **Cadastro ▾ > Trecho** (`cadastro-trecho.js`): grupos de cidades com nome (ex.: SC_Capital = Itajaí, Navegantes…),
+    Supabase chave genérica `cadastro_trechos` = `[{id, nome, cidades:[{uf, nome}]}]`. Podem ser origem/destino de um trecho
+    de tabela (`origemGrupoId`/`destinoGrupoId`, escolhidos na mesma busca Cidade/UF). Casamento (`freteLadoPontos`):
+    cidade (2) > trecho cadastrado (1) > estado todo (0), destino pesa 4×. O motor precisa de `freteDefinirGrupos(lista)`
+    (feito por `lerGrupos()`). Não deixa excluir trecho usado por alguma tabela.
   - Menu **Cadastro ▾ > Cidade** (`cadastro-cidade.js`): cidades por UF no Supabase, chave genérica `cadastro_cidades`
     = `[{ibge, nome, uf}]`; carregado em 25/09/2026 com os 5.571 municípios do IBGE (API servicodados.ibge.gov.br).
     No editor de trecho e no Simulador, origem e

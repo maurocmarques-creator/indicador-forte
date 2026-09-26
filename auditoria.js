@@ -41,7 +41,7 @@ async function carregarAuditoria() {
   const msg = document.getElementById('aud-msg');
   msg.textContent = 'Carregando tabelas...';
   try {
-    [_audTabelas, _audServicos, _audIcms] = await Promise.all([lerTabelas(), lerServicos(), lerIcms()]);
+    [_audTabelas, _audServicos, _audIcms] = await Promise.all([lerTabelas(), lerServicos(), lerIcms(), lerGrupos()]);
   } catch (e) {
     console.error(e);
     msg.textContent = 'Não foi possível carregar as tabelas (verifique a conexão).';
@@ -171,7 +171,7 @@ function audDetalhe(i) {
   if (x.res) {
     const t = x.escolha.tabela, trc = x.escolha.trecho;
     const lugar = (uf, cid) => cid ? `${cadEsc(cid)}/${uf}` : `${uf} (estado todo)`;
-    calcHtml = `<div style="font-size:.74rem;color:#475569;margin-bottom:4px">Tabela <b>${cadEsc(t.nome)}</b> (${freteVigTxt(t)}) · trecho ${lugar(trc.origemUf, trc.origemCidade)} → ${lugar(trc.destinoUf, trc.destinoCidade)}</div>
+    calcHtml = `<div style="font-size:.74rem;color:#475569;margin-bottom:4px">Tabela <b>${cadEsc(t.nome)}</b> (${freteVigTxt(t)}) · trecho ${cadEsc(freteTrechoTxt(trc))}</div>
       <div style="font-size:.72rem;color:#475569;margin-bottom:4px">${simPesosTxt(x.res.pesos)} · portal: ${freteFmtNum(r.PESO_CALC)} kg</div>
       <table class="aud-mini">${x.res.itens.map(it => `<tr><td>${it.rotulo}<div style="font-size:.68rem;color:#64748b">${cadEsc(it.conta)}${it.obs.length ? ' · ' + it.obs.map(cadEsc).join(' · ') : ''}</div></td><td style="text-align:right">R$ ${freteFmt(it.valor)}</td></tr>`).join('')}
       ${x.res.icms ? `<tr><td>ICMS ${freteFmtNum(x.res.icms.aliquota)}%</td><td style="text-align:right">R$ ${freteFmt(x.res.icms.valor)}</td></tr>` : ''}

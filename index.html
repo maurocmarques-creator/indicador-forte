@@ -92,6 +92,10 @@ header{background:var(--primary);color:#fff;padding:0 24px;display:flex;align-it
 .cid-ac-vazio{padding:8px 10px;font-size:.78rem;color:#64748b}
 .sim-salvar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .sim-salvar input{flex:1;min-width:200px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:.84rem}
+.grp-add{display:flex;gap:8px;flex-wrap:wrap}
+.grp-cidades{display:flex;flex-wrap:wrap;gap:6px}
+.grp-chip{display:inline-flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;color:var(--primary);border-radius:999px;padding:3px 6px 3px 10px;font-size:.78rem}
+.grp-chip button{border:0;background:transparent;color:#b91c1c;cursor:pointer;font-size:.75rem;padding:0 2px}
 .cad-del{background:transparent;border:1px solid #fecaca;color:#b91c1c;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer}
 .filters{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filters label{font-size:.75rem;color:var(--gray);font-weight:600}
@@ -169,6 +173,7 @@ tr:last-child td{border-bottom:none}
       <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-tabela')">Tabela</div>
       <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-icms')">ICMS</div>
       <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-cidade')">Cidade</div>
+      <div class="tab-subitem" onclick="event.stopPropagation();document.getElementById('menu-cadastro').classList.remove('aberto');showTab('cad-grupo')">Trecho</div>
     </div>
   </div>
   <div class="tab" onclick="showTab('simulador')">🧮 Simulador</div>
@@ -512,6 +517,23 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- TAB: CADASTRO > TRECHO (grupos de cidades; logica em cadastro-trecho.js) -->
+<div id="tab-cad-grupo" class="content">
+  <div class="table-card" id="cad-grupo-lista">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+      <h3 style="margin:0">Cadastro — Trechos</h3>
+      <button id="cad-grupo-novo" class="cad-btn" type="button" onclick="novoGrupo()" style="display:none">+ Novo trecho</button>
+    </div>
+    <div style="font-size:.76rem;color:#64748b;margin-bottom:10px">Grupo de cidades com nome (ex.: SC_Capital). Pode ser usado como origem ou destino nos trechos das tabelas: a regra vale para qualquer cidade do grupo.</div>
+    <div id="cad-grupo-msg" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
+    <table>
+      <thead><tr><th>Trecho</th><th style="width:80px">Cidades</th><th style="width:120px">UFs</th><th>Cidades (amostra)</th></tr></thead>
+      <tbody id="tb-cad-grupo"></tbody>
+    </table>
+  </div>
+  <div class="table-card" id="cad-grupo-form" style="display:none"></div>
+</div>
+
 <!-- TAB: AUDITORIA (logica em auditoria.js) -->
 <div id="tab-auditoria" class="content">
   <div class="table-card" style="margin-bottom:12px">
@@ -675,7 +697,7 @@ const COLORS = {
 const _MN_MAP = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 function _fmtMes(m){ const p=m.split('-'); return (_MN_MAP[p[1]]||p[1])+'/'+p[0]; }
 // Data/hora da ultima publicacao de codigo (atualizar a cada push que mexe na tela, junto com o ?v= dos scripts).
-const SITE_VERSAO = '25/09/2026 23:44';
+const SITE_VERSAO = '26/09/2026 00:01';
 const MURAL_URL = 'https://claude.ai/artifact/XYivj9hbyRCDPE6q7h3Gvu';
 
 // --- ATUALIZAR AGORA (dispara o pipeline fora do horario programado) ---
@@ -2257,6 +2279,7 @@ function showTab(id) {
   if (id === 'simulador') carregarSimulador();
   if (id === 'cad-icms') carregarIcms();
   if (id === 'cad-cidade') carregarCidadesTela();
+  if (id === 'cad-grupo') carregarGrupos();
   if (id === 'auditoria') carregarAuditoria();
   if (id === 'mapa') renderMapa();
   if (id === 'antecipacao') renderAntecipacao();
@@ -2398,11 +2421,12 @@ async function excluirServico(id) {
 // Start
 init();
 </script>
-<script src="frete-calculo.js?v=202609252339"></script>
-<script src="cadastro-tabela.js?v=202609252339"></script>
-<script src="cadastro-icms.js?v=202609252339"></script>
-<script src="cadastro-cidade.js?v=202609252339"></script>
-<script src="simulador.js?v=202609252339"></script>
-<script src="auditoria.js?v=202609252339"></script>
+<script src="frete-calculo.js?v=202609252359"></script>
+<script src="cadastro-tabela.js?v=202609252359"></script>
+<script src="cadastro-icms.js?v=202609252359"></script>
+<script src="cadastro-cidade.js?v=202609252359"></script>
+<script src="cadastro-trecho.js?v=202609252359"></script>
+<script src="simulador.js?v=202609252359"></script>
+<script src="auditoria.js?v=202609252359"></script>
 </body>
 </html>

@@ -14,6 +14,7 @@
 //      somaIcms, descontoIcmsFretePeso, negociaTarifa (booleans),
 //      composicao: ['GRIS', ...],             // itens que a tabela usa (TAB_COMPOSICAO)
 //      trechos: [{ id, origemUf, origemCidade, destinoUf, destinoCidade,  // cidade '' = estado todo
+//                  origemGrupoId, destinoGrupoId (+ ...GrupoNome) — trecho cadastrado (grupo de cidades) no lugar de UF/cidade,
 //                  regras: { GRIS: {pct, minimo},
 //                            FRETE_COLETA: {faixas:[{de,ate,franquia,valorFranquia,valor}], minimo}, ... } }],
 //      criadoEm, atualizadoEm (ISO) }, ...]
@@ -300,12 +301,13 @@ function trPreenchidos(t, tr) {
 
 async function abrirTrechos(id, aviso) {
   const podeEditar = await cadPodeEditar();
+  try { await lerGrupos(); } catch (e) { /* mostra o nome guardado no trecho */ }
   const t = _tabelas.find(x => x.id === id);
   if (!t) return;
   _tabEditando = id;
   tabVista('trechos');
   const trechos = [...(t.trechos || [])].sort((a, b) =>
-    (a.origemUf + a.origemCidade + a.destinoUf + a.destinoCidade).localeCompare(b.origemUf + b.origemCidade + b.destinoUf + b.destinoCidade));
+    freteTrechoTxt(a).localeCompare(freteTrechoTxt(b)));
   const nComp = (t.composicao || []).length;
   document.getElementById('cad-tabela-trechos').innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px">
@@ -323,8 +325,8 @@ async function abrirTrechos(id, aviso) {
       <tbody>${trechos.length ? trechos.map(tr => {
         const n = trPreenchidos(t, tr);
         return `<tr style="cursor:pointer" onclick="abrirTrecho('${tr.id}')" title="Abrir trecho">
-          <td>${tabLugar(tr.origemUf, tr.origemCidade)}</td>
-          <td>${tabLugar(tr.destinoUf, tr.destinoCidade)}</td>
+          <td>${cadEsc(freteLadoTxt(tr, 'origem'))}</td>
+          <td>${cadEsc(freteLadoTxt(tr, 'destino'))}</td>
           <td style="color:${n < nComp ? '#b45309' : '#16a34a'};font-weight:600">${n} de ${nComp}</td>
         </tr>`;
       }).join('') : '<tr><td colspan="3" style="color:#64748b">Nenhum trecho cadastrado — sem trecho a tabela não é usada no cálculo.</td></tr>'}</tbody>
@@ -352,7 +354,7 @@ async function abrirTrecho(id, copiarDe) {
   _tabComp = (t.composicao || []).filter(k => k in TAB_ROTULO);
 
   const ufOpts = sel => '<option value="">UF</option>' + FRETE_UFS.map(u => `<option${u === sel ? ' selected' : ''}>${u}</option>`).join('');
-  const titulo = tr ? `Trecho ${tabLugar(tr.origemUf, tr.origemCidade)} → ${tabLugar(tr.destinoUf, tr.destinoCidade)}`
+  const titulo = tr ? `Trecho ${cadEsc(freteTrechoTxt(tr))}`
     : copiarDe ? 'Novo trecho (cópia — troque a origem/destino)' : 'Novo trecho';
   tabVista('trechos');
   document.getElementById('cad-tabela-trechos').innerHTML = `
@@ -361,10 +363,10 @@ async function abrirTrecho(id, copiarDe) {
     <div class="tr-form">
       <div><label class="tf-lbl">Origem *</label>
         <div class="cid-ac tr-ac"><input id="tr-orig" type="text" autocomplete="off" placeholder="Digite a cidade ou o estado de origem..."><div class="cid-ac-lista" hidden></div>
-          <select id="tr-ouf" hidden>${ufOpts('')}</select><input id="tr-ocid" type="hidden"></div></div>
+          <select id="tr-ouf" hidden>${ufOpts('')}</select><input id="tr-ocid" type="hidden"><input id="tr-ogrp" type="hidden"></div></div>
       <div><label class="tf-lbl">Destino *</label>
         <div class="cid-ac tr-ac"><input id="tr-dest" type="text" autocomplete="off" placeholder="Digite a cidade ou o estado de destino..."><div class="cid-ac-lista" hidden></div>
-          <select id="tr-duf" hidden>${ufOpts('')}</select><input id="tr-dcid" type="hidden"></div></div>
+          <select id="tr-duf" hidden>${ufOpts('')}</select><input id="tr-dcid" type="hidden"><input id="tr-dgrp" type="hidden"></div></div>
     </div>
     <div class="tf-lbl" style="margin-top:14px">Regras deste trecho</div>
     <div id="tf-regras" class="tf-regras"></div>
@@ -377,10 +379,13 @@ async function abrirTrecho(id, copiarDe) {
     </div>`;
   tabRenderRegras();
   // Origem/destino: busca Cidade/UF (ou "estado todo"); so vale o que for escolhido na lista.
-  try { await lerCidades(); } catch (e) { /* sem cadastro: a busca avisa */ }
-  const acO = cidAutocomplete('tr-orig', 'tr-ouf', 'tr-ocid', { estadoTodo: true });
-  const acD = cidAutocomplete('tr-dest', 'tr-duf', 'tr-dcid', { estadoTodo: true });
-  if (tr) { acO.definir(tr.origemUf, tr.origemCidade); acD.definir(tr.destinoUf, tr.destinoCidade); }
+  try { await Promise.all([lerCidades(), lerGrupos()]); } catch (e) { /* sem cadastro: a busca avisa */ }
+  const acO = cidAutocomplete('tr-orig', 'tr-ouf', 'tr-ocid', { estadoTodo: true, grupoId: 'tr-ogrp' });
+  const acD = cidAutocomplete('tr-dest', 'tr-duf', 'tr-dcid', { estadoTodo: true, grupoId: 'tr-dgrp' });
+  if (tr) {
+    acO.definir(tr.origemUf, tr.origemCidade, tr.origemGrupoId);
+    acD.definir(tr.destinoUf, tr.destinoCidade, tr.destinoGrupoId);
+  }
   if (!podeEditar) {
     const box = document.getElementById('cad-tabela-trechos');
     box.querySelectorAll('input,select').forEach(el => { el.disabled = true; });
@@ -526,8 +531,12 @@ async function salvarTrecho() {
     origemCidade: freteNorm(document.getElementById('tr-ocid').value),
     destinoUf: document.getElementById('tr-duf').value,
     destinoCidade: freteNorm(document.getElementById('tr-dcid').value),
+    origemGrupoId: document.getElementById('tr-ogrp').value,
+    destinoGrupoId: document.getElementById('tr-dgrp').value,
   };
-  if (!dados.origemUf || !dados.destinoUf) { trMsg('Escolha a origem e o destino na lista (digite parte do nome da cidade ou do estado e clique na sugestão).', true); return; }
+  dados.origemGrupoNome = dados.origemGrupoId ? ((_freteGrupos[dados.origemGrupoId] || {}).nome || '') : '';
+  dados.destinoGrupoNome = dados.destinoGrupoId ? ((_freteGrupos[dados.destinoGrupoId] || {}).nome || '') : '';
+  if ((!dados.origemUf && !dados.origemGrupoId) || (!dados.destinoUf && !dados.destinoGrupoId)) { trMsg('Escolha a origem e o destino na lista (digite parte do nome da cidade ou do estado e clique na sugestão).', true); return; }
   try { await lerCidades(); } catch (e) { /* sem cadastro de cidades: nao valida */ }
   for (const [uf, cid, lado] of [[dados.origemUf, dados.origemCidade, 'origem'], [dados.destinoUf, dados.destinoCidade, 'destino']]) {
     if (cid && (_cidades || []).length && !cidadeExiste(uf, cid)) {
@@ -547,8 +556,9 @@ async function salvarTrecho() {
     const t = lista.find(x => x.id === _tabEditando);
     if (!t) { trMsg('Tabela não encontrada (foi excluída?).', true); return; }
     t.trechos = t.trechos || [];
-    const igual = t.trechos.some(x => x.id !== _trEditando && x.origemUf === dados.origemUf && x.destinoUf === dados.destinoUf &&
-      freteNorm(x.origemCidade) === dados.origemCidade && freteNorm(x.destinoCidade) === dados.destinoCidade);
+    const chave = x => [x.origemGrupoId || '', x.origemGrupoId ? '' : x.origemUf, x.origemGrupoId ? '' : freteNorm(x.origemCidade),
+      x.destinoGrupoId || '', x.destinoGrupoId ? '' : x.destinoUf, x.destinoGrupoId ? '' : freteNorm(x.destinoCidade)].join('|');
+    const igual = t.trechos.some(x => x.id !== _trEditando && chave(x) === chave(dados));
     if (igual) { trMsg('Já existe um trecho com essa origem e esse destino nesta tabela.', true); return; }
     const tr = { id: _trEditando || novoId(), ...dados, regras };
     t.trechos = _trEditando ? t.trechos.map(x => (x.id === tr.id ? tr : x)) : [...t.trechos, tr];
