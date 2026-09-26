@@ -116,6 +116,8 @@ const AUD_COLS = [
   { k: 'minuta', txt: x => `${x.r.MINUTA} ${x.r.CTE || ''}` },
   { k: 'emissao', txt: x => tabFmtData(x.r['DATA EMISSAO']) },
   { k: 'servico', txt: x => x.r.SERVICO },
+  { k: 'tabela_portal', txt: x => `${x.r.TABELA_PORTAL || ''} ${x.escolha ? x.escolha.tabela.nome : ''}` },
+  { k: 'cotacao', txt: x => x.r.COTACAO === 'S' ? `sim ${x.r.COTACAO_NUM || ''}` : 'nao' },
   { k: 'origem', txt: x => `${x.r.ORIG_CIDADE}/${x.r.ORIG_UF}` },
   { k: 'destino', txt: x => `${x.r.EFF_CIDADE}/${x.r.EFF_UF} ${x.r.EFF_LOCAL || ''}` },
   { k: 'nf', num: x => +x.r['NF VALOR'] || 0 },
@@ -190,6 +192,8 @@ function audRenderTabela() {
       <td><b>${cadEsc(r.MINUTA)}</b><div style="font-size:.7rem;color:#64748b">CT-e ${cadEsc(r.CTE || '—')}</div></td>
       <td>${r['DATA EMISSAO'] ? tabFmtData(r['DATA EMISSAO']) : ''}</td>
       <td style="font-size:.74rem">${cadEsc(r.SERVICO || '—')}</td>
+      <td style="font-size:.72rem">${cadEsc(r.TABELA_PORTAL || '—')}${x.escolha ? `<div style="color:#2563a8">calc.: ${cadEsc(x.escolha.tabela.nome)}</div>` : ''}</td>
+      <td>${r.COTACAO === 'S' ? `<span class="aud-st" style="background:#fef3c71a;background:#fef3c7;color:#92400e">Sim${r.COTACAO_NUM ? ' · ' + cadEsc(r.COTACAO_NUM) : ''}</span>` : '<span style="color:#94a3b8;font-size:.76rem">Não</span>'}</td>
       <td>${lugar(r.ORIG_CIDADE, r.ORIG_UF)}</td>
       <td>${lugar(r.EFF_CIDADE, r.EFF_UF)}</td>
       <td style="text-align:right">R$ ${freteFmt(r['NF VALOR'])}</td>
@@ -200,8 +204,8 @@ function audRenderTabela() {
       <td style="text-align:right;font-weight:700;color:${x.dif === null ? '#64748b' : Math.abs(x.dif) <= audTolerancia() ? '#16a34a' : '#dc2626'}">${x.dif !== null ? freteFmt(x.dif) : '—'}</td>
       <td><span class="aud-st" style="background:${cor}1a;color:${cor}">${rot}</span></td>
     </tr>
-    <tr id="aud-det-${i}" style="display:none"><td colspan="12" class="aud-det"></td></tr>`;
-  }).join('') || '<tr><td colspan="12" style="color:#64748b">Nenhuma minuta neste filtro.</td></tr>';
+    <tr id="aud-det-${i}" style="display:none"><td colspan="14" class="aud-det"></td></tr>`;
+  }).join('') || '<tr><td colspan="14" style="color:#64748b">Nenhuma minuta neste filtro.</td></tr>';
   document.getElementById('aud-rodape').textContent = _audFiltrado.length > AUD_LIMITE_TELA
     ? `Mostrando ${AUD_LIMITE_TELA} de ${_audFiltrado.length.toLocaleString('pt-BR')} minutas — use os filtros ou exporte para Excel para ver todas.`
     : `${_audFiltrado.length.toLocaleString('pt-BR')} minuta(s).`;
@@ -267,6 +271,7 @@ function audExportar() {
     const r = x.r;
     return {
       Minuta: r.MINUTA, 'CT-e': r.CTE, Emissão: r['DATA EMISSAO'], Serviço: r.SERVICO, 'Tabela portal': r.TABELA_PORTAL,
+      Cotação: r.COTACAO === 'S' ? 'Sim' : 'Não', 'Nº cotação': r.COTACAO_NUM || '',
       'Origem': r.ORIG_CIDADE, 'UF origem': r.ORIG_UF, 'Destino': r.EFF_CIDADE, 'UF destino': r.EFF_UF, Destinatário: r.EFF_LOCAL,
       'Valor mercadoria': r['NF VALOR'], 'Peso real (kg)': r.PESO_REAL, 'Peso cubado portal (kg)': r.PESO_CUBADO,
       'Peso calc portal (kg)': r.PESO_CALC, 'Cubagem (m³)': r.M3,

@@ -225,6 +225,9 @@ def build_rows(df, hoje=None):
             'ORIG_UF': txt(r, 'UF ORIGEM'),
             'SERVICO': txt(r, 'SERVICO'),
             'TABELA_PORTAL': txt(r, 'TABELA'),
+            # numero da cotacao do portal (vazio = sem cotacao; COTACAO ja guarda S/N)
+            'COTACAO_NUM': (str(int(r['COTACAO'])) if isinstance(r.get('COTACAO'), (int, float)) and not pd.isna(r.get('COTACAO'))
+                            else txt(r, 'COTACAO')),
             'PESO_CALC': num(r, 'PESO CALC'),
             'PESO_REAL': num(r, 'PESO REAL'),
             'PESO_CUBADO': num(r, 'PESO CUBADO'),
