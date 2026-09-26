@@ -244,6 +244,7 @@ function audDetalhe(i) {
   tr.firstElementChild.innerHTML = `
     <div class="aud-det-grid">
       <div><div class="tf-lbl">Excel (portal) — tabela ${cadEsc(r.TABELA_PORTAL || '—')}</div>
+        <div style="font-size:.72rem;color:#475569;margin-bottom:4px">Peso real ${freteFmtNum(r.PESO_REAL)} kg · cubagem ${freteFmtNum(r.M3)} m³ · peso cubado ${freteFmtNum(r.PESO_CUBADO)} kg${+r.M3 > 0 && +r.PESO_CUBADO > 0 ? ` (${freteFmtNum(Math.round(r.PESO_CUBADO / r.M3))} kg/m³)` : ''} · peso calculado: <b>${freteFmtNum(r.PESO_CALC)} kg</b></div>
         <table class="aud-mini">${excelItens || '<tr><td colspan="2" style="color:#64748b">Sem taxas detalhadas</td></tr>'}
         <tr style="font-weight:800"><td>Frete total</td><td style="text-align:right">R$ ${freteFmt(x.excel)}</td></tr></table>
         <div style="font-size:.7rem;color:#64748b;margin-top:4px">Destinatário: ${cadEsc(r.EFF_LOCAL || '—')} · NF ${cadEsc(r.NF_DOC)}</div></div>
