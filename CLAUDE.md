@@ -50,20 +50,21 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     array de `{id, nome, criadoEm}`). Relê antes de gravar para não sobrescrever o que outra pessoa salvou.
     Só `CAD_EDITORES` (mauro.cesar@ e brenda.elicia@portoex.com.br) incluem/excluem — o e-mail vem do
     Cloudflare Access (`/cdn-cgi/access/get-identity`); os demais (cliente) só veem. Trava só de tela.
-  - Menu **Cadastro ▾ > Tabela** (aba `tab-cad-tabela`, `cadastro-tabela.js`): tabelas de frete — nome, referência,
-    **serviço** (do cadastro Serviço), tipo Venda/Compra, vigência, precisão, opções SIM/NÃO, **composição** (itens de
-    `TAB_COMPOSICAO`), **regras** de cada item (da tabela, valem para todos os trechos) e **trechos** (origem UF/cidade →
-    destino UF/cidade; cidade vazia = estado todo). Ao salvar a tabela abre a tela de trechos.
-    Salvas no Supabase, `app_config`, chave genérica `cadastro_tabelas` (outros projetos vão ler) — formato no topo do
-    `cadastro-tabela.js`. Não renomear chaves de `TAB_COMPOSICAO` já gravadas. Mesmos editores de `CAD_EDITORES`.
+  - Menu **Cadastro ▾ > Tabela** (aba `tab-cad-tabela`, `cadastro-tabela.js`): a **tabela** tem nome, referência,
+    serviço, tipo Venda/Compra, vigência, precisão, SIM/NÃO (soma ICMS, desconto ICMS s/ frete peso, negocia tarifa) e a
+    **composição** (quais itens de `TAB_COMPOSICAO` entram). As **regras (valores) são sempre por trecho** origem→destino
+    (`trechos[].regras`; cidade vazia = estado todo). Ao salvar a tabela abre a lista de trechos; cada trecho tem editor
+    próprio com as regras de todos os itens da composição e botão Duplicar. Supabase `app_config`, chave genérica
+    `cadastro_tabelas` — formato no topo do `cadastro-tabela.js`. Não renomear chaves de `TAB_COMPOSICAO` já gravadas.
+    Removidos a pedido: Permite desconto/acréscimo; itens Peso por Fração e Taxa por NF.
   - `frete-calculo.js`: motor sem tela (reusar na auditoria Excel × tabela e em outros projetos). Tipos de regra:
     PCT_NF (% sobre valor da mercadoria: GRIS, Advalorem, % sobre NF), PCT_CTE (% sobre CT-e; sem CT-e informado usa a
     soma dos demais itens), FIXO (TDE, TAS, TRT, Despacho, SET/CAT), FRACAO (Pedágio e Pedágio por fração:
     ⌈peso÷fração⌉×valor), FAIXA_PESO (Frete Coleta/Entrega: peso × R$/kg da faixa), FAIXA_M3 (Taxa por m³). Todos têm
     preço mínimo. **Franquia** (só onde a base é kg — em cada faixa de peso e na regra por fração): até a franquia
     cobra o valor da franquia; acima, valor da franquia + excedente pela regra (ex. do usuário: faixa 0–3000, franquia
-    10 kg = R$ 200, excedente R$ 0,50/kg → 100 kg = 200 + 90×0,50 = R$ 245). **A definir**: Peso por Fração,
-    Taxa por NF (entram como R$ 0 com aviso) e o uso das demais opções SIM/NÃO no cálculo.
+    10 kg = R$ 200, excedente R$ 0,50/kg → 100 kg = 200 + 90×0,50 = R$ 245). **A definir**: uso de "desconto de ICMS
+    sobre frete peso" e "negocia tarifa" no cálculo.
     **ICMS**: se a tabela tem "Soma ICMS ao frete" = SIM, total = soma dos itens ÷ (1 − alíquota UF origem→destino).
   - Menu **Cadastro ▾ > ICMS** (aba `tab-cad-icms`, `cadastro-icms.js`): matriz UF origem × destino com a alíquota
     rodoviária; Supabase `app_config`, chave genérica `cadastro_icms` = `{aliquotas: {'SC-SP': 12, ...}}`. Botão importa
@@ -71,7 +72,7 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     planilha "Regra Icms.xlsx" do usuário (729 combinações).
     Escolha da tabela (`freteAcharTabela`): mesmo serviço, vigência ≤ data, trecho que casa; vence a vigência mais
     recente, depois o trecho mais específico. Itens removidos a pedido: Redespacho, KM rodado, Faixas de peso, Volume,
-    Taxa de emergência, Percentual sobre custos.
+    Taxa de emergência, Percentual sobre custos, Peso por Fração, Taxa por NF.
   - Aba **🧮 Simulador** (`simulador.js`): escolhe serviço/tabela (ou automática), data, origem, destino, peso, m³,
     valor NF e CT-e e mostra o cálculo item a item. Só lê, não grava.
   - Próximo passo combinado: auditoria entre o Excel do portal (planilha do projeto) e as tabelas cadastradas.

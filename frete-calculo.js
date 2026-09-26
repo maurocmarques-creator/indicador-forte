@@ -32,10 +32,8 @@ const TAB_COMPOSICAO = [
   ['PEDAGIO_FRACAO', 'Pedágio por Fração', 'FRACAO'],
   ['TAXA_TRT', 'Taxa TRT', 'FIXO'],
   ['TAXA_TAS', 'Taxa TAS', 'FIXO'],
-  ['PESO_FRACAO', 'Peso por Fração', null],
   ['TAXA_TDE', 'Taxa TDE', 'FIXO'],
   ['TAXA_SET_CAT', 'Taxa SET/CAT', 'FIXO'],
-  ['TAXA_NF', 'Taxa por NF', null],
   ['TAXA_M3', 'Taxa por m³', 'FAIXA_M3'],
 ];
 const TAB_ROTULO = Object.fromEntries(TAB_COMPOSICAO.map(([k, r]) => [k, r]));
@@ -121,12 +119,15 @@ function freteFaixa(faixas, x) {
   return (faixas || []).find(f => x >= (f.de ?? 0) && (f.ate === null || f.ate === undefined || x <= f.ate)) || null;
 }
 
+// As regras (valores) sao de cada TRECHO: trecho.regras = {GRIS: {...}, ...};
+// a tabela so diz quais itens entram (composicao) e as opcoes gerais.
 // entrada: {peso (kg), m3, valorNF, valorCte (opcional), ufOrigem, ufDestino}
 // aliquotasIcms: {'SC-SP': 12, ...} (Cadastro > ICMS) — usado se a tabela
 //   tiver "Soma ICMS ao frete" = SIM: total = subtotal / (1 - aliquota/100).
 // Retorna {itens:[{item, rotulo, valor, conta, obs:[]}], subtotal,
 //   icms: null | {aliquota, valor, conta}, total, avisos:[]}
-function freteCalcular(tabela, entrada, aliquotasIcms) {
+function freteCalcular(tabela, trecho, entrada, aliquotasIcms) {
+  const regras = (trecho && trecho.regras) || {};
   const dec = Number.isInteger(tabela.precisao) ? tabela.precisao : 2;
   const arred = v => Math.round(v * 10 ** dec) / 10 ** dec;
   const peso = +entrada.peso || 0;
@@ -143,7 +144,7 @@ function freteCalcular(tabela, entrada, aliquotasIcms) {
   let subtotal = 0;
 
   for (const k of ordem) {
-    const r = (tabela.regras || {})[k] || {};
+    const r = regras[k] || {};
     const tipo = TAB_TIPO[k];
     const rotulo = TAB_ROTULO[k];
     const obs = [];

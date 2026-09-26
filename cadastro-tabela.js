@@ -9,15 +9,14 @@
 // projetos lerem as mesmas tabelas. Formato:
 //   [{ id, nome, referencia, servicoId, servicoNome,
 //      tipo: 'VENDA'|'COMPRA', vigencia: 'AAAA-MM-DD', precisao (2..5),
-//      somaIcms, descontoIcmsFretePeso, permiteDesconto, permiteAcrescimo,
-//      negociaTarifa (booleans),
-//      composicao: ['GRIS', ...],            // itens marcados (TAB_COMPOSICAO)
-//      regras: { GRIS: {pct, minimo}, FRETE_COLETA: {faixas:[{de,ate,franquia,valorFranquia,valor}], minimo}, ... },
-//              (regra de cada tipo e franquia: ver topo do frete-calculo.js)
-//      trechos: [{ id, origemUf, origemCidade, destinoUf, destinoCidade }], // cidade '' = estado todo
+//      somaIcms, descontoIcmsFretePeso, negociaTarifa (booleans),
+//      composicao: ['GRIS', ...],             // itens que a tabela usa (TAB_COMPOSICAO)
+//      trechos: [{ id, origemUf, origemCidade, destinoUf, destinoCidade,  // cidade '' = estado todo
+//                  regras: { GRIS: {pct, minimo},
+//                            FRETE_COLETA: {faixas:[{de,ate,franquia,valorFranquia,valor}], minimo}, ... } }],
 //      criadoEm, atualizadoEm (ISO) }, ...]
-// As regras sao da tabela (valem para todos os trechos dela); os trechos
-// dizem para quais origens/destinos a tabela vale.
+// As regras (valores) sao sempre de cada trecho (origem -> destino); a
+// tabela so diz quais itens entram. Regra de cada tipo: topo do frete-calculo.js.
 
 const CAD_TABELAS_KEY = 'cadastro_tabelas';
 
@@ -25,15 +24,19 @@ const CAD_TABELAS_KEY = 'cadastro_tabelas';
 const TAB_SIMNAO = [
   ['somaIcms', 'Soma imposto (ICMS) ao frete', false],
   ['descontoIcmsFretePeso', 'Aplica desconto de ICMS sobre Frete Peso', false],
-  ['permiteDesconto', 'Permite desconto', true],
-  ['permiteAcrescimo', 'Permite acréscimo', true],
   ['negociaTarifa', 'Negocia tarifa', false],
 ];
 
 let _tabelas = [];
 let _tabEditando = null;   // id da tabela aberta (null = nova)
-let _tabRegras = {};       // regras em edicao (copia de trabalho)
+let _trEditando = null;    // id do trecho aberto (null = novo)
+let _tabRegras = {};       // regras do trecho em edicao (copia de trabalho)
+let _tabComp = [];         // composicao usada para desenhar os blocos de regra
 let _tabServicos = [];
+
+function novoId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
 
 async function lerTabelas() {
   const db = getDb();
@@ -70,9 +73,14 @@ function tabVista(qual) {
   document.getElementById('cad-tabela-lista').style.display = qual === 'lista' ? '' : 'none';
   document.getElementById('cad-tabela-form').style.display = qual === 'form' ? '' : 'none';
   document.getElementById('cad-tabela-trechos').style.display = qual === 'trechos' ? '' : 'none';
+  window.scrollTo(0, 0);
 }
 
-// ---------- LISTA ----------
+function tabLugar(uf, cid) {
+  return cid ? `${cadEsc(cid)}/${uf}` : `<i>${uf} — estado todo</i>`;
+}
+
+// ---------- LISTA DE TABELAS ----------
 
 async function carregarTabelas() {
   tabVista('lista');
@@ -101,10 +109,10 @@ function renderTabelas() {
     </tr>`).join('');
 }
 
-// ---------- FORMULARIO DA TABELA ----------
+// ---------- FORMULARIO DA TABELA (cabecalho + composicao) ----------
 
 function novaTabela() {
-  abrirTabela(null);
+  return abrirTabela(null);
 }
 
 async function abrirTabela(id) {
@@ -112,7 +120,6 @@ async function abrirTabela(id) {
   const t = id ? _tabelas.find(x => x.id === id) : null;
   if (!t && !podeEditar) return;
   _tabEditando = t ? t.id : null;
-  _tabRegras = JSON.parse(JSON.stringify((t && t.regras) || {}));
   try { _tabServicos = await lerServicos(); } catch (e) { _tabServicos = []; }
 
   const f = document.getElementById('cad-tabela-form');
@@ -164,12 +171,11 @@ async function abrirTabela(id) {
         <label class="tf-lbl">Composição da tabela <span style="font-weight:400;color:#64748b">(marque os itens que a tabela usa)</span></label>
         <div class="tf-comp">
           ${TAB_COMPOSICAO.map(([k, rot]) => `
-            <label><input type="checkbox" value="${k}"${(v.composicao || []).includes(k) ? ' checked' : ''} onchange="tabRenderRegras()"> ${rot}</label>`).join('')}
+            <label><input type="checkbox" value="${k}"${(v.composicao || []).includes(k) ? ' checked' : ''}> ${rot}</label>`).join('')}
         </div>
+        <div class="tf-dica" style="margin-top:10px">Os valores de cada item (%, faixas, franquia, mínimo...) são preenchidos em cada trecho (origem → destino).</div>
       </div>
     </div>
-    <div class="tf-lbl" style="margin-top:18px">Regras da tabela <span style="font-weight:400;color:#64748b">(valem para todos os trechos desta tabela)</span></div>
-    <div id="tf-regras" class="tf-regras"></div>
     <div id="tf-msg" style="font-size:.78rem;margin:10px 0 0;min-height:1em"></div>
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <button id="tf-salvar" class="cad-btn" type="button" onclick="salvarTabela()">💾 Salvar e ir para os trechos</button>
@@ -178,17 +184,200 @@ async function abrirTabela(id) {
       ${t ? '<button class="cad-del" type="button" style="margin-left:auto" onclick="excluirTabela()">Excluir tabela</button>' : ''}
     </div>`;
 
-  tabRenderRegras(true);
-
-  // Somente leitura para quem nao e editor
   if (!podeEditar) {
     f.querySelectorAll('input,select').forEach(el => { el.disabled = true; });
-    f.querySelectorAll('#tf-salvar,.cad-del,.tf-add-faixa,.tf-del-faixa').forEach(el => el.remove());
+    f.querySelectorAll('#tf-salvar,.cad-del').forEach(el => el.remove());
   }
 }
 
-function tabComposicaoMarcada() {
-  return [...document.querySelectorAll('#cad-tabela-form .tf-comp input:checked')].map(i => i.value);
+function tfMsg(txt, erro) {
+  const el = document.getElementById('tf-msg');
+  el.textContent = txt;
+  el.style.color = erro ? '#b91c1c' : '#16a34a';
+}
+
+async function salvarTabela() {
+  if (!(await cadPodeEditar())) return;
+  const nomeEl = document.getElementById('tf-nome');
+  const vigEl = document.getElementById('tf-vigencia');
+  const srvEl = document.getElementById('tf-servico');
+  const nome = nomeEl.value.trim();
+  const vigencia = vigEl.value;
+  const servicoId = srvEl.value;
+  nomeEl.style.borderColor = nome ? '' : '#ef4444';
+  vigEl.style.borderColor = vigencia ? '' : '#ef4444';
+  srvEl.style.borderColor = servicoId ? '' : '#ef4444';
+  if (!nome || !vigencia || !servicoId) { tfMsg('Preencha o nome, o serviço e a vigência.', true); return; }
+  const composicao = [...document.querySelectorAll('#cad-tabela-form .tf-comp input:checked')].map(i => i.value);
+  if (!composicao.length) { tfMsg('Marque pelo menos um item da composição.', true); return; }
+
+  const btn = document.getElementById('tf-salvar');
+  btn.disabled = true;
+  tfMsg('Salvando...', false);
+  try {
+    // Rele antes de gravar para nao apagar o que outra pessoa salvou.
+    const lista = await lerTabelas();
+    const dup = lista.find(x => x.id !== _tabEditando && x.nome.toUpperCase() === nome.toUpperCase() && x.vigencia === vigencia);
+    if (dup) { tfMsg('Já existe uma tabela com esse nome e essa vigência.', true); return; }
+
+    const antiga = _tabEditando ? lista.find(x => x.id === _tabEditando) : null;
+    const agora = new Date().toISOString();
+    const srv = _tabServicos.find(s => s.id === servicoId);
+    const tab = {
+      ...(antiga || {}),
+      id: antiga ? antiga.id : novoId(),
+      nome,
+      referencia: document.getElementById('tf-referencia').value.trim(),
+      servicoId,
+      servicoNome: srv ? srv.nome : ((antiga && antiga.servicoNome) || ''),
+      tipo: document.getElementById('tf-tipo').value,
+      vigencia,
+      precisao: +document.getElementById('tf-precisao').value,
+      ...Object.fromEntries(TAB_SIMNAO.map(([k]) => [k, document.getElementById('tf-' + k).value === '1'])),
+      composicao,
+      trechos: (antiga && antiga.trechos) || [],
+      criadoEm: antiga ? antiga.criadoEm : agora,
+      atualizadoEm: agora,
+    };
+    // campos que sairam da tabela
+    delete tab.regras; delete tab.permiteDesconto; delete tab.permiteAcrescimo;
+    const nova = antiga ? lista.map(x => (x.id === tab.id ? tab : x)) : [...lista, tab];
+    await gravarTabelas(nova);
+    _tabelas = nova;
+    _tabEditando = tab.id;
+    abrirTrechos(tab.id, antiga ? `Tabela "${nome}" salva.` : `Tabela "${nome}" salva. Agora inclua os trechos com as regras de cada um.`);
+  } catch (e) {
+    console.error(e);
+    tfMsg('Não foi possível salvar (verifique a conexão).', true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function excluirTabela() {
+  if (!(await cadPodeEditar()) || !_tabEditando) return;
+  const t = _tabelas.find(x => x.id === _tabEditando);
+  if (!t || !confirm(`Excluir a tabela "${t.nome}" e todos os trechos dela? Essa ação não pode ser desfeita.`)) return;
+  try {
+    const lista = (await lerTabelas()).filter(x => x.id !== t.id);
+    await gravarTabelas(lista);
+    _tabelas = lista;
+    _tabEditando = null;
+    await carregarTabelas();
+    tabMsg(`Tabela "${t.nome}" excluída.`);
+  } catch (e) {
+    console.error(e);
+    tfMsg('Não foi possível excluir (verifique a conexão).', true);
+  }
+}
+
+// ---------- LISTA DE TRECHOS ----------
+
+// Cidades conhecidas (destinos que aparecem nos dados do dashboard) para
+// sugerir na digitacao; qualquer cidade pode ser digitada.
+function tabCidadesConhecidas() {
+  const rows = (typeof RAW !== 'undefined' && RAW.rows) || [];
+  return [...new Set(rows.map(r => r.EFF_CIDADE).filter(Boolean))].sort();
+}
+
+function trMsg(txt, erro) {
+  const el = document.getElementById('tr-msg');
+  if (!el) return;
+  el.textContent = txt;
+  el.style.color = erro ? '#b91c1c' : '#16a34a';
+}
+
+// Quantos itens da composicao o trecho ja tem preenchidos.
+function trPreenchidos(t, tr) {
+  const temValor = r => r && Object.entries(r).some(([c, v]) =>
+    c === 'faixas' ? (v || []).length > 0 : v !== null && v !== undefined);
+  return (t.composicao || []).filter(k => temValor((tr.regras || {})[k])).length;
+}
+
+async function abrirTrechos(id, aviso) {
+  const podeEditar = await cadPodeEditar();
+  const t = _tabelas.find(x => x.id === id);
+  if (!t) return;
+  _tabEditando = id;
+  tabVista('trechos');
+  const trechos = [...(t.trechos || [])].sort((a, b) =>
+    (a.origemUf + a.origemCidade + a.destinoUf + a.destinoCidade).localeCompare(b.origemUf + b.origemCidade + b.destinoUf + b.destinoCidade));
+  const nComp = (t.composicao || []).length;
+  document.getElementById('cad-tabela-trechos').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+      <h3 style="margin:0">Trechos — ${cadEsc(t.nome)}</h3>
+      ${podeEditar ? `<button class="cad-btn" type="button" onclick="abrirTrecho(null)">+ Novo trecho</button>` : ''}
+    </div>
+    <div style="font-size:.78rem;color:#64748b;margin-bottom:10px">
+      Serviço ${cadEsc(t.servicoNome || '—')} · vigência ${tabFmtData(t.vigencia)} ·
+      cada trecho tem as suas regras. No cálculo, vale o trecho que casar com a origem e o destino
+      (cidade em branco = estado todo; com cidade tem prioridade).
+    </div>
+    <div id="tr-msg" style="font-size:.78rem;margin:4px 0 8px;min-height:1em"></div>
+    <table>
+      <thead><tr><th>Origem</th><th>Destino</th><th style="width:160px">Itens preenchidos</th></tr></thead>
+      <tbody>${trechos.length ? trechos.map(tr => {
+        const n = trPreenchidos(t, tr);
+        return `<tr style="cursor:pointer" onclick="abrirTrecho('${tr.id}')" title="Abrir trecho">
+          <td>${tabLugar(tr.origemUf, tr.origemCidade)}</td>
+          <td>${tabLugar(tr.destinoUf, tr.destinoCidade)}</td>
+          <td style="color:${n < nComp ? '#b45309' : '#16a34a'};font-weight:600">${n} de ${nComp}</td>
+        </tr>`;
+      }).join('') : '<tr><td colspan="3" style="color:#64748b">Nenhum trecho cadastrado — sem trecho a tabela não é usada no cálculo.</td></tr>'}</tbody>
+    </table>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="cad-btn" type="button" style="background:var(--primary-light)" onclick="abrirTabela('${t.id}')">← Voltar para a tabela</button>
+      <button class="cad-btn" type="button" style="background:#64748b" onclick="carregarTabelas()">Lista de tabelas</button>
+    </div>`;
+  if (aviso) trMsg(aviso, false);
+}
+
+// ---------- EDITOR DE TRECHO (origem/destino + regras) ----------
+
+// id = trecho existente; null = novo; copiarDe = id de trecho cujas regras
+// vem pre-preenchidas (botao Duplicar).
+async function abrirTrecho(id, copiarDe) {
+  const podeEditar = await cadPodeEditar();
+  const t = _tabelas.find(x => x.id === _tabEditando);
+  if (!t) return;
+  const tr = id ? (t.trechos || []).find(x => x.id === id) : null;
+  if (!tr && !podeEditar) return;
+  const base = copiarDe ? (t.trechos || []).find(x => x.id === copiarDe) : tr;
+  _trEditando = tr ? tr.id : null;
+  _tabRegras = JSON.parse(JSON.stringify((base && base.regras) || {}));
+  _tabComp = (t.composicao || []).filter(k => k in TAB_ROTULO);
+
+  const ufOpts = sel => '<option value="">UF</option>' + FRETE_UFS.map(u => `<option${u === sel ? ' selected' : ''}>${u}</option>`).join('');
+  const titulo = tr ? `Trecho ${tabLugar(tr.origemUf, tr.origemCidade)} → ${tabLugar(tr.destinoUf, tr.destinoCidade)}`
+    : copiarDe ? 'Novo trecho (cópia — troque a origem/destino)' : 'Novo trecho';
+  tabVista('trechos');
+  document.getElementById('cad-tabela-trechos').innerHTML = `
+    <h3 style="margin-bottom:4px">${titulo}</h3>
+    <div style="font-size:.78rem;color:#64748b;margin-bottom:12px">Tabela ${cadEsc(t.nome)} · vigência ${tabFmtData(t.vigencia)} · cidade em branco = estado todo.</div>
+    <div class="tr-form">
+      <div><label class="tf-lbl">Origem *</label>
+        <div class="tr-par"><select id="tr-ouf">${ufOpts(tr ? tr.origemUf : '')}</select>
+          <input id="tr-ocid" type="text" list="tr-cidades" placeholder="Cidade (em branco = estado todo)" value="${cadEsc(tr ? tr.origemCidade : '')}"></div></div>
+      <div><label class="tf-lbl">Destino *</label>
+        <div class="tr-par"><select id="tr-duf">${ufOpts(tr ? tr.destinoUf : '')}</select>
+          <input id="tr-dcid" type="text" list="tr-cidades" placeholder="Cidade (em branco = estado todo)" value="${cadEsc(tr ? tr.destinoCidade : '')}"></div></div>
+    </div>
+    <datalist id="tr-cidades">${tabCidadesConhecidas().map(c => `<option value="${cadEsc(c)}">`).join('')}</datalist>
+    <div class="tf-lbl" style="margin-top:14px">Regras deste trecho</div>
+    <div id="tf-regras" class="tf-regras"></div>
+    <div id="tr-msg" style="font-size:.78rem;margin:10px 0 0;min-height:1em"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button id="tr-salvar" class="cad-btn" type="button" onclick="salvarTrecho()">💾 Salvar trecho</button>
+      ${tr ? `<button class="cad-btn tr-dup" type="button" style="background:var(--primary-light)" onclick="abrirTrecho(null,'${tr.id}')">📄 Duplicar trecho</button>` : ''}
+      <button class="cad-btn" type="button" style="background:#64748b" onclick="abrirTrechos('${t.id}')">← Voltar aos trechos</button>
+      ${tr ? '<button class="cad-del" type="button" style="margin-left:auto" onclick="excluirTrecho()">Excluir trecho</button>' : ''}
+    </div>`;
+  tabRenderRegras();
+  if (!podeEditar) {
+    const box = document.getElementById('cad-tabela-trechos');
+    box.querySelectorAll('input,select').forEach(el => { el.disabled = true; });
+    box.querySelectorAll('#tr-salvar,.tr-dup,.cad-del,.tf-add-faixa,.tf-del-faixa').forEach(el => el.remove());
+  }
 }
 
 // Le os valores digitados nos blocos de regra de volta para _tabRegras.
@@ -268,42 +457,33 @@ function tabBlocoRegra(k) {
     </div>`;
 }
 
-// Mostra um bloco de regra so para os itens marcados na composicao,
-// preservando o que ja foi digitado.
-function tabRenderRegras(inicial) {
-  if (!inicial) tabColetarRegras();
-  const marcados = tabComposicaoMarcada();
-  document.getElementById('tf-regras').innerHTML = marcados.length
-    ? marcados.map(tabBlocoRegra).join('')
-    : '<div style="color:#64748b;font-size:.8rem">Marque ao lado os itens da composição — só eles aparecem aqui.</div>';
+// Desenha um bloco de regra para cada item da composicao da tabela.
+function tabRenderRegras() {
+  document.getElementById('tf-regras').innerHTML = _tabComp.length
+    ? _tabComp.map(tabBlocoRegra).join('')
+    : '<div style="color:#64748b;font-size:.8rem">A tabela não tem itens na composição — marque-os na tela da tabela.</div>';
 }
 
 function tabAddFaixa(k) {
   tabColetarRegras();
   const r = _tabRegras[k] || (_tabRegras[k] = {});
   r.faixas = r.faixas || [];
-  // Sugere o "de" logo depois do "ate" da ultima faixa (ex.: ate 1 -> de 1,01).
+  // Sugere o "de" logo depois do "ate" da ultima faixa (ex.: ate 1 -> de 1,01)
+  // e repete a franquia da faixa anterior (geralmente e a mesma).
   const ult = r.faixas[r.faixas.length - 1];
   const de = ult && ult.ate !== null && ult.ate !== undefined ? Math.round((ult.ate + 0.01) * 100) / 100 : null;
-  // Repete a franquia da faixa anterior (geralmente e a mesma).
   r.faixas.push({ de, ate: null, franquia: ult ? ult.franquia : null, valorFranquia: null, valor: null });
-  tabRenderRegras(true);
+  tabRenderRegras();
 }
 
 function tabDelFaixa(k, i) {
   tabColetarRegras();
   const r = _tabRegras[k];
   if (r && r.faixas) r.faixas.splice(i, 1);
-  tabRenderRegras(true);
+  tabRenderRegras();
 }
 
-function tfMsg(txt, erro) {
-  const el = document.getElementById('tf-msg');
-  el.textContent = txt;
-  el.style.color = erro ? '#b91c1c' : '#16a34a';
-}
-
-// Regras so dos itens marcados, sem faixas totalmente vazias.
+// Regras so dos itens da composicao, sem faixas totalmente vazias.
 function tabRegrasParaGravar(composicao) {
   const out = {};
   for (const k of composicao) {
@@ -330,194 +510,58 @@ function tabValidarRegras(regras) {
   return null;
 }
 
-async function salvarTabela() {
+async function salvarTrecho() {
   if (!(await cadPodeEditar())) return;
   tabColetarRegras();
-  const nomeEl = document.getElementById('tf-nome');
-  const vigEl = document.getElementById('tf-vigencia');
-  const srvEl = document.getElementById('tf-servico');
-  const nome = nomeEl.value.trim();
-  const vigencia = vigEl.value;
-  const servicoId = srvEl.value;
-  nomeEl.style.borderColor = nome ? '' : '#ef4444';
-  vigEl.style.borderColor = vigencia ? '' : '#ef4444';
-  srvEl.style.borderColor = servicoId ? '' : '#ef4444';
-  if (!nome || !vigencia || !servicoId) { tfMsg('Preencha o nome, o serviço e a vigência.', true); return; }
-
-  const composicao = tabComposicaoMarcada();
-  const regras = tabRegrasParaGravar(composicao);
-  const erroRegra = tabValidarRegras(regras);
-  if (erroRegra) { tfMsg(erroRegra, true); return; }
-
-  const btn = document.getElementById('tf-salvar');
-  btn.disabled = true;
-  tfMsg('Salvando...', false);
-  try {
-    // Rele antes de gravar para nao apagar o que outra pessoa salvou.
-    const lista = await lerTabelas();
-    const dup = lista.find(x => x.id !== _tabEditando && x.nome.toUpperCase() === nome.toUpperCase() && x.vigencia === vigencia);
-    if (dup) { tfMsg('Já existe uma tabela com esse nome e essa vigência.', true); return; }
-
-    const antiga = _tabEditando ? lista.find(x => x.id === _tabEditando) : null;
-    const agora = new Date().toISOString();
-    const srv = _tabServicos.find(s => s.id === servicoId);
-    const tab = {
-      ...(antiga || {}),
-      id: antiga ? antiga.id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      nome,
-      referencia: document.getElementById('tf-referencia').value.trim(),
-      servicoId,
-      servicoNome: srv ? srv.nome : ((antiga && antiga.servicoNome) || ''),
-      tipo: document.getElementById('tf-tipo').value,
-      vigencia,
-      precisao: +document.getElementById('tf-precisao').value,
-      ...Object.fromEntries(TAB_SIMNAO.map(([k]) => [k, document.getElementById('tf-' + k).value === '1'])),
-      composicao,
-      regras,
-      trechos: (antiga && antiga.trechos) || [],
-      criadoEm: antiga ? antiga.criadoEm : agora,
-      atualizadoEm: agora,
-    };
-    const nova = antiga ? lista.map(x => (x.id === tab.id ? tab : x)) : [...lista, tab];
-    await gravarTabelas(nova);
-    _tabelas = nova;
-    _tabEditando = tab.id;
-    abrirTrechos(tab.id, `Tabela "${nome}" salva. Agora inclua os trechos em que ela vale.`);
-  } catch (e) {
-    console.error(e);
-    tfMsg('Não foi possível salvar (verifique a conexão).', true);
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-async function excluirTabela() {
-  if (!(await cadPodeEditar()) || !_tabEditando) return;
-  const t = _tabelas.find(x => x.id === _tabEditando);
-  if (!t || !confirm(`Excluir a tabela "${t.nome}"? Essa ação não pode ser desfeita.`)) return;
-  try {
-    const lista = (await lerTabelas()).filter(x => x.id !== t.id);
-    await gravarTabelas(lista);
-    _tabelas = lista;
-    _tabEditando = null;
-    await carregarTabelas();
-    tabMsg(`Tabela "${t.nome}" excluída.`);
-  } catch (e) {
-    console.error(e);
-    tfMsg('Não foi possível excluir (verifique a conexão).', true);
-  }
-}
-
-// ---------- TRECHOS ----------
-
-// Cidades conhecidas (destinos que aparecem nos dados do dashboard) para
-// sugerir na digitacao; qualquer cidade pode ser digitada.
-function tabCidadesConhecidas() {
-  const rows = (typeof RAW !== 'undefined' && RAW.rows) || [];
-  return [...new Set(rows.map(r => r.EFF_CIDADE).filter(Boolean))].sort();
-}
-
-async function abrirTrechos(id, aviso) {
-  const podeEditar = await cadPodeEditar();
-  const t = _tabelas.find(x => x.id === id);
-  if (!t) return;
-  _tabEditando = id;
-  tabVista('trechos');
-  const ufOpts = '<option value="">UF</option>' + FRETE_UFS.map(u => `<option>${u}</option>`).join('');
-  const el = document.getElementById('cad-tabela-trechos');
-  el.innerHTML = `
-    <h3 style="margin-bottom:4px">Trechos — ${cadEsc(t.nome)}</h3>
-    <div style="font-size:.78rem;color:#64748b;margin-bottom:12px">
-      Serviço ${cadEsc(t.servicoNome || '—')} · vigência ${tabFmtData(t.vigencia)} ·
-      no cálculo, o frete usa esta tabela quando a origem e o destino casam com um dos trechos abaixo.
-      Deixe a cidade em branco para valer para o estado inteiro.
-    </div>
-    ${podeEditar ? `
-    <div class="tr-form">
-      <div><label class="tf-lbl">Origem</label>
-        <div class="tr-par"><select id="tr-ouf">${ufOpts}</select>
-          <input id="tr-ocid" type="text" list="tr-cidades" placeholder="Cidade (em branco = estado todo)"></div></div>
-      <div><label class="tf-lbl">Destino</label>
-        <div class="tr-par"><select id="tr-duf">${ufOpts}</select>
-          <input id="tr-dcid" type="text" list="tr-cidades" placeholder="Cidade (em branco = estado todo)"></div></div>
-      <button class="cad-btn" type="button" onclick="adicionarTrecho()" style="align-self:flex-end">+ Adicionar trecho</button>
-    </div>
-    <datalist id="tr-cidades">${tabCidadesConhecidas().map(c => `<option value="${cadEsc(c)}">`).join('')}</datalist>` : ''}
-    <div id="tr-msg" style="font-size:.78rem;margin:8px 0;min-height:1em"></div>
-    <table>
-      <thead><tr><th>Origem</th><th>Destino</th><th style="width:90px"></th></tr></thead>
-      <tbody id="tb-trechos"></tbody>
-    </table>
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-      <button class="cad-btn" type="button" style="background:var(--primary-light)" onclick="abrirTabela('${t.id}')">← Voltar para a tabela</button>
-      <button class="cad-btn" type="button" style="background:#64748b" onclick="carregarTabelas()">Lista de tabelas</button>
-    </div>`;
-  renderTrechos(podeEditar);
-  if (aviso) trMsg(aviso, false);
-}
-
-function trMsg(txt, erro) {
-  const el = document.getElementById('tr-msg');
-  el.textContent = txt;
-  el.style.color = erro ? '#b91c1c' : '#16a34a';
-}
-
-function renderTrechos(podeEditar) {
-  const t = _tabelas.find(x => x.id === _tabEditando);
-  const trechos = (t && t.trechos) || [];
-  const lugar = (uf, cid) => cid ? `${cadEsc(cid)}/${uf}` : `<i>${uf} — estado todo</i>`;
-  document.getElementById('tb-trechos').innerHTML = trechos.length
-    ? trechos.map(tr => `<tr>
-        <td>${lugar(tr.origemUf, tr.origemCidade)}</td>
-        <td>${lugar(tr.destinoUf, tr.destinoCidade)}</td>
-        <td style="text-align:right">${podeEditar ? `<button class="cad-del" type="button" onclick="excluirTrecho('${tr.id}')">Excluir</button>` : ''}</td>
-      </tr>`).join('')
-    : '<tr><td colspan="3" style="color:#64748b">Nenhum trecho cadastrado — sem trecho a tabela não é usada no cálculo automático.</td></tr>';
-}
-
-async function adicionarTrecho() {
-  if (!(await cadPodeEditar())) return;
-  const tr = {
+  const dados = {
     origemUf: document.getElementById('tr-ouf').value,
     origemCidade: freteNorm(document.getElementById('tr-ocid').value),
     destinoUf: document.getElementById('tr-duf').value,
     destinoCidade: freteNorm(document.getElementById('tr-dcid').value),
   };
-  if (!tr.origemUf || !tr.destinoUf) { trMsg('Escolha a UF de origem e a de destino.', true); return; }
+  if (!dados.origemUf || !dados.destinoUf) { trMsg('Escolha a UF de origem e a de destino.', true); return; }
+  const regras = tabRegrasParaGravar(_tabComp);
+  const erro = tabValidarRegras(regras);
+  if (erro) { trMsg(erro, true); return; }
+
+  const btn = document.getElementById('tr-salvar');
+  btn.disabled = true;
+  trMsg('Salvando...', false);
   try {
     const lista = await lerTabelas();
     const t = lista.find(x => x.id === _tabEditando);
     if (!t) { trMsg('Tabela não encontrada (foi excluída?).', true); return; }
     t.trechos = t.trechos || [];
-    const igual = t.trechos.some(x => x.origemUf === tr.origemUf && x.destinoUf === tr.destinoUf &&
-      freteNorm(x.origemCidade) === tr.origemCidade && freteNorm(x.destinoCidade) === tr.destinoCidade);
-    if (igual) { trMsg('Esse trecho já está cadastrado.', true); return; }
-    t.trechos.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...tr });
+    const igual = t.trechos.some(x => x.id !== _trEditando && x.origemUf === dados.origemUf && x.destinoUf === dados.destinoUf &&
+      freteNorm(x.origemCidade) === dados.origemCidade && freteNorm(x.destinoCidade) === dados.destinoCidade);
+    if (igual) { trMsg('Já existe um trecho com essa origem e esse destino nesta tabela.', true); return; }
+    const tr = { id: _trEditando || novoId(), ...dados, regras };
+    t.trechos = _trEditando ? t.trechos.map(x => (x.id === tr.id ? tr : x)) : [...t.trechos, tr];
     t.atualizadoEm = new Date().toISOString();
     await gravarTabelas(lista);
     _tabelas = lista;
-    renderTrechos(true);
-    document.getElementById('tr-ocid').value = '';
-    document.getElementById('tr-dcid').value = '';
-    trMsg('Trecho incluído.', false);
+    await abrirTrechos(t.id, 'Trecho salvo.');
   } catch (e) {
     console.error(e);
     trMsg('Não foi possível salvar o trecho (verifique a conexão).', true);
+  } finally {
+    btn.disabled = false;
   }
 }
 
-async function excluirTrecho(trId) {
-  if (!(await cadPodeEditar())) return;
+async function excluirTrecho() {
+  if (!(await cadPodeEditar()) || !_trEditando) return;
+  if (!confirm('Excluir este trecho e as regras dele?')) return;
   try {
     const lista = await lerTabelas();
     const t = lista.find(x => x.id === _tabEditando);
     if (!t) return;
-    t.trechos = (t.trechos || []).filter(x => x.id !== trId);
+    t.trechos = (t.trechos || []).filter(x => x.id !== _trEditando);
     t.atualizadoEm = new Date().toISOString();
     await gravarTabelas(lista);
     _tabelas = lista;
-    renderTrechos(true);
-    trMsg('Trecho excluído.', false);
+    _trEditando = null;
+    await abrirTrechos(t.id, 'Trecho excluído.');
   } catch (e) {
     console.error(e);
     trMsg('Não foi possível excluir o trecho (verifique a conexão).', true);

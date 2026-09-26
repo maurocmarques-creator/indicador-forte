@@ -70,7 +70,8 @@ function simular() {
   if (tabId) {
     const t = _simTabelas.find(x => x.id === tabId);
     const m = freteMelhorTrecho(t, origem, destino);
-    escolha = { tabela: t, trecho: m && m.trecho, manual: true };
+    if (!m) return simerro(`A tabela "${t.nome}" não tem trecho para essa origem e esse destino — as regras ficam no trecho.`);
+    escolha = { tabela: t, trecho: m.trecho, manual: true };
   } else {
     escolha = freteAcharTabela(_simTabelas, { servicoId, data: v('sim-data'), origem, destino });
     if (!escolha) {
@@ -79,12 +80,10 @@ function simular() {
   }
 
   const t = escolha.tabela;
-  const res = freteCalcular(t, entrada, _simIcms);
+  const res = freteCalcular(t, escolha.trecho, entrada, _simIcms);
   const dec = Number.isInteger(t.precisao) ? t.precisao : 2;
   const lugar = (uf, cid) => cid ? `${cadEsc(cid)}/${uf}` : `${uf} (estado todo)`;
-  const trechoTxt = escolha.trecho
-    ? `${lugar(escolha.trecho.origemUf, escolha.trecho.origemCidade)} → ${lugar(escolha.trecho.destinoUf, escolha.trecho.destinoCidade)}`
-    : '<span style="color:#b91c1c">nenhum trecho desta tabela casa com a origem/destino (calculado mesmo assim)</span>';
+  const trechoTxt = `${lugar(escolha.trecho.origemUf, escolha.trecho.origemCidade)} → ${lugar(escolha.trecho.destinoUf, escolha.trecho.destinoCidade)}`;
 
   const avisos = [...res.avisos];
 
