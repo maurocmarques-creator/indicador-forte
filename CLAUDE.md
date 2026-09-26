@@ -86,8 +86,9 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     valor NF e CT-e e mostra o cálculo item a item. Só lê, não grava.
   - Menu **Cadastro ▾ > Cidade** (`cadastro-cidade.js`): cidades por UF no Supabase, chave genérica `cadastro_cidades`
     = `[{ibge, nome, uf}]`; carregado em 25/09/2026 com os 5.571 municípios do IBGE (API servicodados.ibge.gov.br).
-    Alimenta as sugestões de cidade (por UF) nos trechos; o trecho só aceita cidade cadastrada. No Simulador, origem e
-    destino são uma busca Cidade/UF (`cidAutocomplete`): digita parte do nome e só vale o que for escolhido na lista.
+    No editor de trecho e no Simulador, origem e
+    destino são uma busca Cidade/UF (`cidAutocomplete`): digita parte do nome e só vale o que for escolhido na lista
+    (no trecho, com `estadoTodo`, a lista também oferece "UF — estado todo").
   - Aba **🔍 Auditoria** (`auditoria.js`, só aparece para `CAD_EDITORES`): recalcula cada minuta do RAW pela tabela
     (serviço = coluna SERVICO casada pelo nome com o Cadastro > Serviço; vigência pela emissão; origem CIDADE/UF ORIGEM;
     destino = local de entrega efetivo EFF_*; peso = PESO CALC; cubagem = METRAGEM CUBICA; mercadoria = NF VALOR;

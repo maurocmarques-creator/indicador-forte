@@ -58,7 +58,17 @@ function cidLigarUf(selectId, datalistId) {
 // So vale o que for escolhido na lista: ao escolher, grava a UF no <select>
 // ufId e o nome no campo cidId (hidden) e dispara 'change' neles; se o
 // texto for mexido depois, os dois sao limpos (evita cidade/UF errada).
-function cidAutocomplete(inputId, ufId, cidId) {
+const CID_UF_NOMES = {
+  AC: 'Acre', AL: 'Alagoas', AM: 'Amazonas', AP: 'Amapá', BA: 'Bahia', CE: 'Ceará', DF: 'Distrito Federal',
+  ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão', MG: 'Minas Gerais', MS: 'Mato Grosso do Sul',
+  MT: 'Mato Grosso', PA: 'Pará', PB: 'Paraíba', PE: 'Pernambuco', PI: 'Piauí', PR: 'Paraná',
+  RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte', RO: 'Rondônia', RR: 'Roraima', RS: 'Rio Grande do Sul',
+  SC: 'Santa Catarina', SE: 'Sergipe', SP: 'São Paulo', TO: 'Tocantins',
+};
+
+// opts.estadoTodo: a lista tambem oferece "UF — estado todo" (cidade vazia),
+// usado nos trechos das tabelas.
+function cidAutocomplete(inputId, ufId, cidId, opts = {}) {
   const inp = document.getElementById(inputId);
   const lista = inp.parentElement.querySelector('.cid-ac-lista');
   const ufEl = document.getElementById(ufId);
@@ -71,8 +81,8 @@ function cidAutocomplete(inputId, ufId, cidId) {
 
   function escolher(c) {
     ufEl.value = c.uf;
-    cidEl.value = c.nome;
-    inp.value = `${c.nome}/${c.uf}`;
+    cidEl.value = c.estado ? '' : c.nome;
+    inp.value = c.estado ? `${c.uf} — estado todo` : `${c.nome}/${c.uf}`;
     inp.classList.add('cid-ok');
     ufEl.dispatchEvent(new Event('change'));
     cidEl.dispatchEvent(new Event('change'));
@@ -100,9 +110,20 @@ function cidAutocomplete(inputId, ufId, cidId) {
     const ordem = (a, b) => (freteNorm(b.nome) === nomeBusca) - (freteNorm(a.nome) === nomeBusca) ||
       a.nome.length - b.nome.length || a.nome.localeCompare(b.nome);
     itens = comeca.sort(ordem).concat(contem.sort(ordem)).slice(0, 15);
+    if (opts.estadoTodo) {
+      // "sp", "sao paulo", "santa cat"... -> oferece o estado inteiro no topo
+      const estados = FRETE_UFS.filter(u => u === txt ||
+        (txt.length >= 3 && freteNorm(CID_UF_NOMES[u]).startsWith(nomeBusca) && (!ufBusca || u === ufBusca)))
+        .map(u => ({ uf: u, nome: CID_UF_NOMES[u], estado: true }));
+      // cidade com o nome exato digitado vem antes do estado (ex.: "sao paulo sp" -> cidade, depois estado)
+      const exatas = itens.filter(c => freteNorm(c.nome) === nomeBusca);
+      itens = exatas.concat(estados, itens.filter(c => !exatas.includes(c))).slice(0, 15);
+    }
     ativo = itens.length ? 0 : -1;
     lista.innerHTML = itens.length
-      ? itens.map((c, i) => `<div class="cid-ac-item" data-i="${i}"><b>${cadEsc(c.nome)}</b><span class="uf">${c.uf}</span></div>`).join('')
+      ? itens.map((c, i) => c.estado
+          ? `<div class="cid-ac-item" data-i="${i}"><span><b>Estado todo</b> · ${cadEsc(c.nome)}</span><span class="uf">${c.uf}</span></div>`
+          : `<div class="cid-ac-item" data-i="${i}"><b>${cadEsc(c.nome)}</b><span class="uf">${c.uf}</span></div>`).join('')
       : `<div class="cid-ac-vazio">${_cidades ? 'Nenhuma cidade encontrada.' : 'Carregando cidades...'}</div>`;
     marcarAtivo();
     lista.hidden = false;
@@ -130,6 +151,7 @@ function cidAutocomplete(inputId, ufId, cidId) {
   // Para preencher por codigo (ex.: Auditoria -> Abrir no Simulador).
   return {
     definir(uf, nome) {
+      if (uf && !nome && opts.estadoTodo) { escolher({ uf, nome: CID_UF_NOMES[uf] || uf, estado: true }); return; }
       const c = (_cidades || []).find(x => x.uf === uf && freteNorm(x.nome) === freteNorm(nome));
       if (c) { escolher(c); return; }
       ufEl.value = uf || '';
