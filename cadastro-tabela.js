@@ -8,7 +8,8 @@
 // CAD_TABELAS_KEY) com uma chave generica de proposito: a ideia e outros
 // projetos lerem as mesmas tabelas. Formato:
 //   [{ id, nome, referencia, servicoId, servicoNome,
-//      tipo: 'VENDA'|'COMPRA', vigencia: 'AAAA-MM-DD', precisao (2..5),
+//      tipo: 'VENDA'|'COMPRA', vigencia: 'AAAA-MM-DD' (data FINAL, "valida ate"),
+//      vigenciaInicio: 'AAAA-MM-DD' | '' (opcional; vazio = vale desde sempre), precisao (2..5),
 //      fatorCubagem (kg por m3; peso cubado = m3 x fator; peso considerado = maior entre real e cubado),
 //      somaIcms, descontoIcmsFretePeso, negociaTarifa (booleans),
 //      composicao: ['GRIS', ...],             // itens que a tabela usa (TAB_COMPOSICAO)
@@ -104,7 +105,7 @@ function renderTabelas() {
     <tr style="cursor:pointer" onclick="abrirTabela('${t.id}')" title="Abrir tabela">
       <td><b>${cadEsc(t.nome)}</b>${t.referencia ? ` <span style="color:#64748b;font-size:.75rem">(${cadEsc(t.referencia)})</span>` : ''}</td>
       <td>${cadEsc(t.servicoNome || '—')}</td>
-      <td>${tabFmtData(t.vigencia)}</td>
+      <td style="font-size:.8rem">${freteVigTxt(t)}</td>
       <td>${t.tipo === 'COMPRA' ? 'Compra' : 'Venda'}</td>
       <td style="color:#64748b;font-size:.78rem">${(t.trechos || []).length} trecho(s)</td>
     </tr>`).join('');
@@ -158,7 +159,9 @@ async function abrirTabela(id) {
               <option value="VENDA"${v.tipo !== 'COMPRA' ? ' selected' : ''}>Venda</option>
               <option value="COMPRA"${v.tipo === 'COMPRA' ? ' selected' : ''}>Compra</option>
             </select></div>
-          <div><label class="tf-lbl">Vigência *</label>
+          <div><label class="tf-lbl">Início (opcional)</label>
+            <input id="tf-vig-inicio" type="date" value="${v.vigenciaInicio || ''}"></div>
+          <div><label class="tf-lbl">Válida até *</label>
             <input id="tf-vigencia" type="date" value="${v.vigencia || ''}"></div>
           <div><label class="tf-lbl">Cubagem (kg/m³)</label>
             <input id="tf-cubagem" type="text" inputmode="decimal" style="width:90px" value="${tabInp(v.fatorCubagem)}" placeholder="ex.: 300"></div>
@@ -211,7 +214,9 @@ async function salvarTabela() {
   nomeEl.style.borderColor = nome ? '' : '#ef4444';
   vigEl.style.borderColor = vigencia ? '' : '#ef4444';
   srvEl.style.borderColor = servicoId ? '' : '#ef4444';
-  if (!nome || !vigencia || !servicoId) { tfMsg('Preencha o nome, o serviço e a vigência.', true); return; }
+  if (!nome || !vigencia || !servicoId) { tfMsg('Preencha o nome, o serviço e a data "válida até".', true); return; }
+  const vigenciaInicio = document.getElementById('tf-vig-inicio').value;
+  if (vigenciaInicio && vigenciaInicio > vigencia) { tfMsg('O início da vigência não pode ser depois da data "válida até".', true); return; }
   const composicao = [...document.querySelectorAll('#cad-tabela-form .tf-comp input:checked')].map(i => i.value);
   if (!composicao.length) { tfMsg('Marque pelo menos um item da composição.', true); return; }
 
@@ -222,7 +227,7 @@ async function salvarTabela() {
     // Rele antes de gravar para nao apagar o que outra pessoa salvou.
     const lista = await lerTabelas();
     const dup = lista.find(x => x.id !== _tabEditando && x.nome.toUpperCase() === nome.toUpperCase() && x.vigencia === vigencia);
-    if (dup) { tfMsg('Já existe uma tabela com esse nome e essa vigência.', true); return; }
+    if (dup) { tfMsg('Já existe uma tabela com esse nome e essa data "válida até".', true); return; }
 
     const antiga = _tabEditando ? lista.find(x => x.id === _tabEditando) : null;
     const agora = new Date().toISOString();
@@ -236,6 +241,7 @@ async function salvarTabela() {
       servicoNome: srv ? srv.nome : ((antiga && antiga.servicoNome) || ''),
       tipo: document.getElementById('tf-tipo').value,
       vigencia,
+      vigenciaInicio,
       precisao: +document.getElementById('tf-precisao').value,
       fatorCubagem: freteNum(document.getElementById('tf-cubagem').value),
       ...Object.fromEntries(TAB_SIMNAO.map(([k]) => [k, document.getElementById('tf-' + k).value === '1'])),
@@ -307,7 +313,7 @@ async function abrirTrechos(id, aviso) {
       ${podeEditar ? `<button class="cad-btn" type="button" onclick="abrirTrecho(null)">+ Novo trecho</button>` : ''}
     </div>
     <div style="font-size:.78rem;color:#64748b;margin-bottom:10px">
-      Serviço ${cadEsc(t.servicoNome || '—')} · vigência ${tabFmtData(t.vigencia)} ·
+      Serviço ${cadEsc(t.servicoNome || '—')} · ${freteVigTxt(t)} ·
       cada trecho tem as suas regras. No cálculo, vale o trecho que casar com a origem e o destino
       (cidade em branco = estado todo; com cidade tem prioridade).
     </div>
@@ -351,7 +357,7 @@ async function abrirTrecho(id, copiarDe) {
   tabVista('trechos');
   document.getElementById('cad-tabela-trechos').innerHTML = `
     <h3 style="margin-bottom:4px">${titulo}</h3>
-    <div style="font-size:.78rem;color:#64748b;margin-bottom:12px">Tabela ${cadEsc(t.nome)} · vigência ${tabFmtData(t.vigencia)} · cidade em branco = estado todo.</div>
+    <div style="font-size:.78rem;color:#64748b;margin-bottom:12px">Tabela ${cadEsc(t.nome)} · ${freteVigTxt(t)} · cidade em branco = estado todo.</div>
     <div class="tr-form">
       <div><label class="tf-lbl">Origem *</label>
         <div class="cid-ac tr-ac"><input id="tr-orig" type="text" autocomplete="off" placeholder="Digite a cidade ou o estado de origem..."><div class="cid-ac-lista" hidden></div>

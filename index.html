@@ -467,7 +467,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div id="cad-tabela-msg" style="font-size:.78rem;color:#64748b;margin-bottom:10px"></div>
     <table>
-      <thead><tr><th>Nome da tabela</th><th>Serviço</th><th style="width:120px">Vigência</th><th style="width:90px">Tipo</th><th style="width:110px">Trechos</th></tr></thead>
+      <thead><tr><th>Nome da tabela</th><th>Serviço</th><th style="width:170px">Vigência</th><th style="width:90px">Tipo</th><th style="width:110px">Trechos</th></tr></thead>
       <tbody id="tb-cad-tabela"></tbody>
     </table>
   </div>
@@ -555,7 +555,7 @@ tr:last-child td{border-bottom:none}
       <select id="sim-servico" style="width:100%;margin-bottom:10px" onchange="simAtualizarTabelas()"></select>
       <label class="tf-lbl">Tabela</label>
       <select id="sim-tabela" style="width:100%;margin-bottom:10px"></select>
-      <label class="tf-lbl">Data do frete <span style="font-weight:400;color:#64748b">(define a vigência)</span></label>
+      <label class="tf-lbl">Data do frete <span style="font-weight:400;color:#64748b">(usa a tabela válida nessa data)</span></label>
       <input id="sim-data" type="date" style="margin-bottom:10px">
       <label class="tf-lbl">Origem</label>
       <div class="cid-ac" style="margin-bottom:10px"><input id="sim-orig" type="text" autocomplete="off" placeholder="Digite a cidade de origem..."><div class="cid-ac-lista" hidden></div>
@@ -2396,11 +2396,11 @@ async function excluirServico(id) {
 // Start
 init();
 </script>
-<script src="frete-calculo.js?v=202609252337"></script>
-<script src="cadastro-tabela.js?v=202609252337"></script>
-<script src="cadastro-icms.js?v=202609252337"></script>
-<script src="cadastro-cidade.js?v=202609252337"></script>
-<script src="simulador.js?v=202609252337"></script>
-<script src="auditoria.js?v=202609252337"></script>
+<script src="frete-calculo.js?v=202609252339"></script>
+<script src="cadastro-tabela.js?v=202609252339"></script>
+<script src="cadastro-icms.js?v=202609252339"></script>
+<script src="cadastro-cidade.js?v=202609252339"></script>
+<script src="simulador.js?v=202609252339"></script>
+<script src="auditoria.js?v=202609252339"></script>
 </body>
 </html>

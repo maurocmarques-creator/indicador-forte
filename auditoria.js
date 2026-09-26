@@ -3,7 +3,7 @@
 // frete cobrado. Somente leitura. Aba visivel so para CAD_EDITORES.
 //
 // Por minuta: servico = coluna SERVICO do Excel (casada pelo nome com o
-// Cadastro > Servico); data = emissao (vigencia); origem = CIDADE/UF ORIGEM;
+// Cadastro > Servico); data = emissao (tabela valida nessa data: ate `vigencia`, desde `vigenciaInicio`); origem = CIDADE/UF ORIGEM;
 // destino = local de entrega efetivo (EFF_CIDADE/EFF_UF, o mesmo do
 // dashboard); peso = PESO CALC; cubagem = METRAGEM CUBICA; valor da
 // mercadoria = NF VALOR; valor do CT-e (base do "% sobre CT-e") = FRETE TOTAL.
@@ -171,7 +171,7 @@ function audDetalhe(i) {
   if (x.res) {
     const t = x.escolha.tabela, trc = x.escolha.trecho;
     const lugar = (uf, cid) => cid ? `${cadEsc(cid)}/${uf}` : `${uf} (estado todo)`;
-    calcHtml = `<div style="font-size:.74rem;color:#475569;margin-bottom:4px">Tabela <b>${cadEsc(t.nome)}</b> (vig. ${tabFmtData(t.vigencia)}) · trecho ${lugar(trc.origemUf, trc.origemCidade)} → ${lugar(trc.destinoUf, trc.destinoCidade)}</div>
+    calcHtml = `<div style="font-size:.74rem;color:#475569;margin-bottom:4px">Tabela <b>${cadEsc(t.nome)}</b> (${freteVigTxt(t)}) · trecho ${lugar(trc.origemUf, trc.origemCidade)} → ${lugar(trc.destinoUf, trc.destinoCidade)}</div>
       <div style="font-size:.72rem;color:#475569;margin-bottom:4px">${simPesosTxt(x.res.pesos)} · portal: ${freteFmtNum(r.PESO_CALC)} kg</div>
       <table class="aud-mini">${x.res.itens.map(it => `<tr><td>${it.rotulo}<div style="font-size:.68rem;color:#64748b">${cadEsc(it.conta)}${it.obs.length ? ' · ' + it.obs.map(cadEsc).join(' · ') : ''}</div></td><td style="text-align:right">R$ ${freteFmt(it.valor)}</td></tr>`).join('')}
       ${x.res.icms ? `<tr><td>ICMS ${freteFmtNum(x.res.icms.aliquota)}%</td><td style="text-align:right">R$ ${freteFmt(x.res.icms.valor)}</td></tr>` : ''}
@@ -180,7 +180,7 @@ function audDetalhe(i) {
   } else if (x.status === 'SEM_SERVICO') {
     calcHtml = `<div class="sim-aviso">O serviço "${cadEsc(r.SERVICO || '(vazio)')}" não está no Cadastro > Serviço.</div>`;
   } else {
-    calcHtml = `<div class="sim-aviso">Nenhuma tabela do serviço ${cadEsc(r.SERVICO)} vigente em ${tabFmtData(r['DATA EMISSAO'])} tem trecho para ${cadEsc(r.ORIG_CIDADE)}/${r.ORIG_UF} → ${cadEsc(r.EFF_CIDADE)}/${r.EFF_UF}.</div>`;
+    calcHtml = `<div class="sim-aviso">Nenhuma tabela do serviço ${cadEsc(r.SERVICO)} válida em ${tabFmtData(r['DATA EMISSAO'])} tem trecho para ${cadEsc(r.ORIG_CIDADE)}/${r.ORIG_UF} → ${cadEsc(r.EFF_CIDADE)}/${r.EFF_UF}.</div>`;
   }
   tr.firstElementChild.innerHTML = `
     <div class="aud-det-grid">

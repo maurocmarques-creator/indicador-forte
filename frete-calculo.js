@@ -100,19 +100,36 @@ function freteMelhorTrecho(tabela, origem, destino) {
   return melhor;
 }
 
-// Escolhe a tabela para um frete: mesmo servico, vigencia ate a data e um
-// trecho que case com origem/destino. Entre as candidatas vale a vigencia
-// mais recente; empate -> o trecho mais especifico (com cidade).
+// Vigencia: `vigencia` e a data FINAL (tabela "valida ate"); `vigenciaInicio`
+// e opcional (vazia = vale desde sempre ate a data final).
+function freteVigente(t, data) {
+  if (!data) return true;
+  if (t.vigencia && data > t.vigencia) return false;
+  if (t.vigenciaInicio && data < t.vigenciaInicio) return false;
+  return true;
+}
+
+function freteVigTxt(t) {
+  const f = iso => iso ? iso.split('-').reverse().join('/') : '';
+  return t.vigenciaInicio ? `${f(t.vigenciaInicio)} a ${f(t.vigencia)}` : `válida até ${f(t.vigencia)}`;
+}
+
+// Escolhe a tabela para um frete: mesmo servico, vigente na data (data <=
+// valida ate, e >= inicio se houver) e com trecho que case com origem/destino.
+// Entre as candidatas: a de inicio mais recente (sem inicio = mais antiga);
+// empate -> trecho mais especifico (com cidade); empate -> a que termina antes.
 // Retorna {tabela, trecho, pontos} ou null.
 function freteAcharTabela(tabelas, { servicoId, data, origem, destino }) {
   let melhor = null;
   for (const t of tabelas) {
     if (servicoId && t.servicoId !== servicoId) continue;
-    if (data && t.vigencia && t.vigencia > data) continue;
+    if (!freteVigente(t, data)) continue;
     const m = freteMelhorTrecho(t, origem, destino);
     if (!m) continue;
-    if (!melhor || t.vigencia > melhor.tabela.vigencia ||
-        (t.vigencia === melhor.tabela.vigencia && m.pontos > melhor.pontos)) {
+    const ini = t.vigenciaInicio || '', iniM = melhor ? (melhor.tabela.vigenciaInicio || '') : '';
+    if (!melhor || ini > iniM ||
+        (ini === iniM && (m.pontos > melhor.pontos ||
+          (m.pontos === melhor.pontos && (t.vigencia || '9999') < (melhor.tabela.vigencia || '9999'))))) {
       melhor = { tabela: t, ...m };
     }
   }

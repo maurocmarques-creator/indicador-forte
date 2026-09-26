@@ -58,7 +58,7 @@ function simAtualizarTabelas() {
   const doServico = _simTabelas.filter(t => t.servicoId === srvId)
     .sort((a, b) => (b.vigencia || '').localeCompare(a.vigencia || ''));
   sel.innerHTML = '<option value="">Automática (vigência + trecho)</option>' +
-    doServico.map(t => `<option value="${t.id}"${t.id === atual ? ' selected' : ''}>${cadEsc(t.nome)} — ${tabFmtData(t.vigencia)}</option>`).join('');
+    doServico.map(t => `<option value="${t.id}"${t.id === atual ? ' selected' : ''}>${cadEsc(t.nome)} — ${freteVigTxt(t)}</option>`).join('');
 }
 
 function simerro(txt) {
@@ -90,16 +90,18 @@ function simular() {
   if (!destino.uf || !destino.cidade) return simerro('Escolha a cidade de destino na lista (digite parte do nome e clique na sugestão).');
 
   let escolha;
+  let avisoVig = '';
   const tabId = v('sim-tabela');
   if (tabId) {
     const t = _simTabelas.find(x => x.id === tabId);
     const m = freteMelhorTrecho(t, origem, destino);
     if (!m) return simerro(`A tabela "${t.nome}" não tem trecho para essa origem e esse destino — as regras ficam no trecho.`);
+    if (!freteVigente(t, v('sim-data'))) avisoVig = `A tabela "${t.nome}" (${freteVigTxt(t)}) não vale na data do frete ${tabFmtData(v('sim-data'))} — calculado mesmo assim porque foi escolhida na mão.`;
     escolha = { tabela: t, trecho: m.trecho, manual: true };
   } else {
     escolha = freteAcharTabela(_simTabelas, { servicoId, data: v('sim-data'), origem, destino });
     if (!escolha) {
-      return simerro('Nenhuma tabela deste serviço, vigente na data, tem um trecho que case com essa origem e esse destino.');
+      return simerro('Nenhuma tabela deste serviço válida na data do frete tem um trecho que case com essa origem e esse destino.');
     }
   }
 
@@ -110,6 +112,7 @@ function simular() {
   const trechoTxt = `${lugar(escolha.trecho.origemUf, escolha.trecho.origemCidade)} → ${lugar(escolha.trecho.destinoUf, escolha.trecho.destinoCidade)}`;
 
   const avisos = [...res.avisos];
+  if (avisoVig) avisos.unshift(avisoVig);
   _simUltima = {
     entrada: {
       servicoId, servicoNome: (_simServicos.find(s => s.id === servicoId) || {}).nome || '',
@@ -117,7 +120,7 @@ function simular() {
       peso: entrada.peso, m3: entrada.m3, valorNF: entrada.valorNF, valorCte: entrada.valorCte,
     },
     resultado: {
-      tabelaNome: t.nome, vigencia: t.vigencia,
+      tabelaNome: t.nome, vigencia: t.vigencia, vigenciaInicio: t.vigenciaInicio || '',
       trecho: trechoTxt.replace(/<[^>]+>/g, ''), pesos: res.pesos,
       itens: res.itens.map(i => ({ rotulo: i.rotulo, valor: i.valor })),
       subtotal: res.subtotal, icms: res.icms ? { aliquota: res.icms.aliquota, valor: res.icms.valor } : null, total: res.total,
@@ -126,7 +129,7 @@ function simular() {
 
   document.getElementById('sim-resultado').innerHTML = `
     <div class="sim-cab">
-      <div><b>${cadEsc(t.nome)}</b> · vigência ${tabFmtData(t.vigencia)} ${escolha.manual ? '(escolhida na mão)' : '(automática)'}</div>
+      <div><b>${cadEsc(t.nome)}</b> · ${freteVigTxt(t)} ${escolha.manual ? '(escolhida na mão)' : '(automática)'}</div>
       <div>Trecho: ${trechoTxt}</div>
       <div>${simPesosTxt(res.pesos)}</div>
     </div>
@@ -286,7 +289,7 @@ function exportarSimSalvas() {
     const e = s.entrada, r = s.resultado;
     return {
       'Salva em': simFmtDataHora(s.criadoEm), 'Salva por': s.criadoPor || '', Descrição: s.descricao || '',
-      Serviço: e.servicoNome, Tabela: r.tabelaNome, 'Vigência': r.vigencia, 'Data do frete': e.data, Trecho: r.trecho,
+      Serviço: e.servicoNome, Tabela: r.tabelaNome, 'Válida até': r.vigencia, 'Início vigência': r.vigenciaInicio || '', 'Data do frete': e.data, Trecho: r.trecho,
       Origem: `${e.origem.cidade}/${e.origem.uf}`, Destino: `${e.destino.cidade}/${e.destino.uf}`,
       'Peso real (kg)': e.peso, 'Cubagem (m³)': e.m3, 'Peso considerado (kg)': r.pesos ? r.pesos.considerado : e.peso,
       'Valor NF': e.valorNF, 'Valor CT-e informado': e.valorCte ?? '',
