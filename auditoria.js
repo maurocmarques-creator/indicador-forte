@@ -298,5 +298,5 @@ function audExportar() {
 // A aba so aparece para quem pode editar os cadastros (PortoEx).
 cadPodeEditar().then(ok => {
   const b = document.getElementById('tab-btn-auditoria');
-  if (b) b.style.display = ok ? '' : 'none';
+  if (b) b.style.display = (ok && typeof MOSTRAR_ABAS_MOTOR !== 'undefined' && MOSTRAR_ABAS_MOTOR) ? '' : 'none';
 });

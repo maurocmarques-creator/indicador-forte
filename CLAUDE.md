@@ -132,6 +132,9 @@ com os mesmos scripts genéricos; tudo o que é específico do cliente fica em
     efetivo (agendamento, senão prev. entrega): no dia do prazo / 1 / 2 / 3+ dias antes. Cards, barras por mês, rosca
     e tabela por mês. Fora da conta (avisado na nota): no prazo sem data de entrega e as marcadas no prazo por correção
     manual com entrega depois do prazo.
+  - **Cadastro ▾, Simulador e Auditoria estão OCULTOS no menu** (29/09/2026, a pedido; só `display:none` + flag
+    `MOSTRAR_ABAS_MOTOR = false` no `index.html`). O código e os dados continuam. Para mostrar de volta: `true` na flag e tirar
+    o `style="display:none"` de `#menu-cadastro` e do item Simulador. O motor reaproveitável está em `../motor-frete`.
   - Não editar o `RAW` à mão: ele é regerado a cada rodada do pipeline.
 - `.github/workflows/atualizar-manual.yml` — workflow `workflow_dispatch` disparado pelo
   botão "Atualizar Agora"; roda `python pipeline_atualizar.py` no runner self-hosted,
